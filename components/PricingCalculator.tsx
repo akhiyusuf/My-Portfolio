@@ -8,9 +8,10 @@ interface OptionRowProps {
     name: string;
     price: string;
     children: React.ReactNode;
+    fullWidth?: boolean;
 }
-const OptionRow: React.FC<OptionRowProps> = ({ name, price, children }) => (
-    <div className="py-3">
+const OptionRow: React.FC<OptionRowProps> = ({ name, price, children, fullWidth = false }) => (
+    <div className={`py-3 ${fullWidth ? 'col-span-2' : ''}`}>
         <div className="flex justify-between items-center mb-2">
             <span className="font-medium text-gray-300">{name}</span>
             <span className="text-sky-400 font-mono text-sm">{price}</span>
@@ -18,6 +19,7 @@ const OptionRow: React.FC<OptionRowProps> = ({ name, price, children }) => (
         {children}
     </div>
 );
+
 
 interface SliderInputProps {
     value: number;
@@ -78,8 +80,9 @@ interface FeatureControlsProps {
 }
 
 const FeatureControls: React.FC<FeatureControlsProps> = ({ selections, updateSelection }) => (
-    <>
-        <div className="md:col-span-2">
+    <div className="space-y-3">
+        {/* Row 1: Design Tier (Full Width) */}
+        <div className="pt-2">
             <OptionRow name="Design Tier" price={`×${selections.designTier} of base`}>
                 <select value={selections.designTier} onChange={e => updateSelection('designTier', parseInt(e.target.value))} className="w-full bg-[#2a2a2a] border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
                     <option value={1}>Tier 1: Template Customization</option>
@@ -89,19 +92,39 @@ const FeatureControls: React.FC<FeatureControlsProps> = ({ selections, updateSel
                 </select>
             </OptionRow>
         </div>
-        <OptionRow name="Standard Pages" price={formatCurrencyStatic(PRICING.standardPage, 'ngn') + '/p'}>
-            <SliderInput value={selections.standardPages} onChange={v => updateSelection('standardPages', v)} />
-        </OptionRow>
-        <OptionRow name="Complex Pages" price={formatCurrencyStatic(PRICING.complexPage, 'ngn') + '/p'}>
-            <SliderInput value={selections.complexPages} onChange={v => updateSelection('complexPages', v)} />
-        </OptionRow>
-        <OptionRow name="System Pages" price={formatCurrencyStatic(PRICING.systemPage, 'ngn') + '/p'}>
-            <SliderInput value={selections.systemPages} onChange={v => updateSelection('systemPages', v)} max={5} />
-        </OptionRow>
-         <OptionRow name="API Integrations" price={formatCurrencyStatic(PRICING.apiIntegration, 'ngn') + '/API'}>
-            <SliderInput value={selections.apis} onChange={v => updateSelection('apis', v)} max={10} />
-        </OptionRow>
-        <div className="md:col-span-2">
+        
+        {/* Row 2: Page Sliders (Two Columns) */}
+        <div className="grid grid-cols-2 items-start relative">
+             <div className="pr-4">
+                <OptionRow name="Standard Pages" price={formatCurrencyStatic(PRICING.standardPage, 'ngn') + '/p'}>
+                    <SliderInput value={selections.standardPages} onChange={v => updateSelection('standardPages', v)} />
+                </OptionRow>
+            </div>
+             <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-700/50"></div>
+            <div className="pl-4">
+                <OptionRow name="Complex Pages" price={formatCurrencyStatic(PRICING.complexPage, 'ngn') + '/p'}>
+                    <SliderInput value={selections.complexPages} onChange={v => updateSelection('complexPages', v)} />
+                </OptionRow>
+            </div>
+        </div>
+
+        {/* Row 3: Other Sliders (Two Columns) */}
+        <div className="grid grid-cols-2 items-start relative">
+             <div className="pr-4">
+                <OptionRow name="System Pages" price={formatCurrencyStatic(PRICING.systemPage, 'ngn') + '/p'}>
+                    <SliderInput value={selections.systemPages} onChange={v => updateSelection('systemPages', v)} max={5} />
+                </OptionRow>
+            </div>
+            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-700/50"></div>
+            <div className="pl-4">
+                 <OptionRow name="API Integrations" price={formatCurrencyStatic(PRICING.apiIntegration, 'ngn') + '/API'}>
+                    <SliderInput value={selections.apis} onChange={v => updateSelection('apis', v)} max={10} />
+                </OptionRow>
+            </div>
+        </div>
+
+        {/* Row 4: CMS (Full Width) */}
+         <div>
             <OptionRow name="Content Management (CMS)" price={selections.cmsType !== "0" ? "One-time" : "None"}>
                 <select value={selections.cmsType} onChange={e => updateSelection('cmsType', e.target.value)} className="w-full bg-[#2a2a2a] border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
                     <option value="0">None</option>
@@ -110,32 +133,42 @@ const FeatureControls: React.FC<FeatureControlsProps> = ({ selections, updateSel
                 </select>
             </OptionRow>
         </div>
-        <div className="md:col-span-2">
+        
+        {/* Row 5: E-commerce (Full Width) */}
+        <div>
             <OptionRow name="Number of Products (for E-commerce)" price={formatCurrencyStatic(PRICING.product, 'ngn') + '/prod'}>
                 <SliderInput value={selections.products} onChange={v => updateSelection('products', v)} max={200} />
             </OptionRow>
         </div>
-        <OptionRow name="User Authentication" price={formatCurrencyStatic(PRICING.userAuth, 'ngn')}>
-            <ToggleSwitch checked={selections.userAuth} onChange={v => updateSelection('userAuth', v)} />
-        </OptionRow>
-        <OptionRow name="Payment Gateway" price={formatCurrencyStatic(PRICING.paymentGateway, 'ngn')}>
-            <ToggleSwitch checked={selections.paymentGateway} onChange={v => updateSelection('paymentGateway', v)} />
-        </OptionRow>
-    </>
+
+        {/* Row 6: Toggles (Two Columns) */}
+         <div className="grid grid-cols-2 items-start relative pt-2">
+            <div className="pr-4">
+                <OptionRow name="User Authentication" price={formatCurrencyStatic(PRICING.userAuth, 'ngn')}>
+                    <ToggleSwitch checked={selections.userAuth} onChange={v => updateSelection('userAuth', v)} />
+                </OptionRow>
+            </div>
+             <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-700/50"></div>
+            <div className="pl-4">
+                <OptionRow name="Payment Gateway" price={formatCurrencyStatic(PRICING.paymentGateway, 'ngn')}>
+                    <ToggleSwitch checked={selections.paymentGateway} onChange={v => updateSelection('paymentGateway', v)} />
+                </OptionRow>
+            </div>
+        </div>
+    </div>
 );
+
 
 const CoreFeaturesControls: React.FC<FeatureControlsProps> = ({ selections, updateSelection }) => (
     <>
-        <div className="md:col-span-2">
-            <OptionRow name="Design Tier" price={`×${selections.designTier} of base`}>
-                <select value={selections.designTier} onChange={e => updateSelection('designTier', parseInt(e.target.value))} className="w-full bg-[#2a2a2a] border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
-                    <option value={1}>Tier 1: Template Customization</option>
-                    <option value={2}>Tier 2: Custom Design</option>
-                    <option value={3}>Tier 3: Premium Custom</option>
-                    <option value={4}>Tier 4: Enterprise-grade</option>
-                </select>
-            </OptionRow>
-        </div>
+        <OptionRow name="Design Tier" price={`×${selections.designTier} of base`} fullWidth>
+            <select value={selections.designTier} onChange={e => updateSelection('designTier', parseInt(e.target.value))} className="w-full bg-[#2a2a2a] border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
+                <option value={1}>Tier 1: Template Customization</option>
+                <option value={2}>Tier 2: Custom Design</option>
+                <option value={3}>Tier 3: Premium Custom</option>
+                <option value={4}>Tier 4: Enterprise-grade</option>
+            </select>
+        </OptionRow>
         <OptionRow name="Standard Pages" price={formatCurrencyStatic(PRICING.standardPage, 'ngn') + '/p'}>
             <SliderInput value={selections.standardPages} onChange={v => updateSelection('standardPages', v)} />
         </OptionRow>
@@ -153,20 +186,16 @@ const AdvancedFeaturesControls: React.FC<FeatureControlsProps> = ({ selections, 
         <OptionRow name="API Integrations" price={formatCurrencyStatic(PRICING.apiIntegration, 'ngn') + '/API'}>
             <SliderInput value={selections.apis} onChange={v => updateSelection('apis', v)} max={10} />
         </OptionRow>
-        <div className="md:col-span-2">
-            <OptionRow name="Content Management (CMS)" price={selections.cmsType !== "0" ? "One-time" : "None"}>
-                <select value={selections.cmsType} onChange={e => updateSelection('cmsType', e.target.value)} className="w-full bg-[#2a2a2a] border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
-                    <option value="0">None</option>
-                    <option value="100000">Headless CMS (e.g., Sanity)</option>
-                    <option value="250000">Traditional CMS (e.g., WordPress)</option>
-                </select>
-            </OptionRow>
-        </div>
-        <div className="md:col-span-2">
-            <OptionRow name="Number of Products (for E-commerce)" price={formatCurrencyStatic(PRICING.product, 'ngn') + '/prod'}>
-                <SliderInput value={selections.products} onChange={v => updateSelection('products', v)} max={200} />
-            </OptionRow>
-        </div>
+        <OptionRow name="Content Management (CMS)" price={selections.cmsType !== "0" ? "One-time" : "None"} fullWidth>
+            <select value={selections.cmsType} onChange={e => updateSelection('cmsType', e.target.value)} className="w-full bg-[#2a2a2a] border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
+                <option value="0">None</option>
+                <option value="100000">Headless CMS (e.g., Sanity)</option>
+                <option value="250000">Traditional CMS (e.g., WordPress)</option>
+            </select>
+        </OptionRow>
+        <OptionRow name="Number of Products (for E-commerce)" price={formatCurrencyStatic(PRICING.product, 'ngn') + '/prod'} fullWidth>
+            <SliderInput value={selections.products} onChange={v => updateSelection('products', v)} max={200} />
+        </OptionRow>
         <OptionRow name="User Authentication" price={formatCurrencyStatic(PRICING.userAuth, 'ngn')}>
             <ToggleSwitch checked={selections.userAuth} onChange={v => updateSelection('userAuth', v)} />
         </OptionRow>
@@ -336,7 +365,7 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
                     <h3 className="text-2xl font-medium text-white pb-4 border-b border-gray-800">Project Features</h3>
                     
                     {/* DESKTOP: Single 2-column grid */}
-                    <div className="hidden lg:grid grid-cols-1 md:grid-cols-2 gap-x-8 pt-4">
+                    <div className="hidden lg:block divide-y divide-gray-700/50">
                         <FeatureControls {...featureControlsProps} />
                     </div>
 
@@ -360,7 +389,7 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
                                         <ChevronDownIcon className={`w-5 h-5 transition-transform duration-200 ${openSections.includes('core') ? 'rotate-180' : ''}`} />
                                     </button>
                                     {openSections.includes('core') && (
-                                        <div className="pl-4 pr-2 pb-2 border-l-2 border-gray-700/50">
+                                        <div className="pl-4 pr-2 pb-2 border-l-2 border-gray-700/50 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
                                             <CoreFeaturesControls {...featureControlsProps} />
                                         </div>
                                     )}
@@ -373,7 +402,7 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
                                         <ChevronDownIcon className={`w-5 h-5 transition-transform duration-200 ${openSections.includes('advanced') ? 'rotate-180' : ''}`} />
                                     </button>
                                      {openSections.includes('advanced') && (
-                                        <div className="pl-4 pr-2 pb-2 border-l-2 border-gray-700/50">
+                                        <div className="pl-4 pr-2 pb-2 border-l-2 border-gray-700/50 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
                                             <AdvancedFeaturesControls {...featureControlsProps} />
                                         </div>
                                     )}

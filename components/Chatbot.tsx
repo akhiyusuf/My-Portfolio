@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI, Chat } from '@google/genai';
 import { ChatIcon, SendIcon, XIcon, ShareIcon, SparkleIcon, CalculatorIcon } from './Icons';
 import { Selections, initialSelections } from './pricing';
 
@@ -37,7 +36,6 @@ const Chatbot: React.FC<ChatbotProps> = ({
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isCalculating, setIsCalculating] = useState(false);
-    const [chat, setChat] = useState<Chat | null>(null);
     const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const shareMenuRef = useRef<HTMLDivElement>(null);
@@ -47,95 +45,78 @@ const Chatbot: React.FC<ChatbotProps> = ({
 - Yusuf's skills: React, Next.js, TypeScript, Tailwind CSS, Node.js, Vercel, Docker.
 - Yusuf's services: App Development, Frontend Development, eCommerce solutions.
 
+**CRITICAL RULE: THE INVISIBLE CALCULATOR & SELF-VERIFICATION**
+You have an internal, invisible calculator that is a perfect, error-free copy of the main on-screen calculator. You MUST use this for any budget or alternative calculations. You cannot "estimate"; you must calculate precisely using a rigorous, self-verifying internal monologue.
+
 **INTERNAL CALCULATION FORMULA & REFERENCE (All prices in NGN):**
+The total cost is the SUM of all the following components that apply:
+- **Base Fee**: 250,000 (This is always included)
+- **Design Tier Cost**: 100,000 * the selected tier (1, 2, 3, or 4)
+- **Standard Pages Cost**: 25,000 * number of pages
+- **Complex Pages Cost**: 45,000 * number of pages
+- **System Pages Cost**: 90,000 * number of pages
+- **CMS Cost**: 0 for None, 100,000 for Headless, 250,000 for Traditional
+- **E-commerce Cost**: 300,000 base fee (only if products > 0) PLUS 5,000 * number of products
+- **User Authentication Cost**: 120,000 (if selected)
+- **Payment Gateway Cost**: 150,000 (if selected)
+- **API Integrations Cost**: 100,000 * number of integrations
 
-**Your calculation MUST follow this formula precisely:**
-Total = (Base Fee) + (Page Costs) + (Feature Costs)
+---
 
-**1. Base Fee (Always included):**
-- Base Setup: 150000
-- Responsive Development: 100000
-- Design Cost: 100000 * (Selected Design Tier from 1-4)
-- *The absolute minimum project cost is 350,000 (Base Setup + Responsive Dev + Tier 1 Design).*
+**RESPONSE RULES & FLOWS**
 
-**2. Page Costs (Add as needed):**
-- Standard Page: 25000 per page
-- Complex Page: 45000 per page
-- System Page: 90000 per page
+**1. GENERAL CONVERSATION:** Be friendly and answer questions based on Yusuf's skills and services.
 
-**3. Feature Costs (Add as needed):**
-- CMS: 0 (None), 100000 (Headless), 250000 (Traditional)
-- E-commerce: 300000 (base fee if products > 0) + (5000 * number of products)
-- User Authentication: 120000
-- Payment Gateway: 150000
-- API Integrations: 100000 per API
+**2. PRICING INTENT:**
+- If a user wants a price for THEIR OWN project (e.g., "How much would my website cost?"), you MUST respond with ONLY the special command: \`[ACTION:PRICING]\`.
 
-**CURRENCY CONVERSION:**
-- All primary calculations are in Nigerian Naira (NGN).
-- If asked for a price in USD, you MUST use the conversion rate of **1 USD = 1550 NGN**. Do not use any other rate.
+**3. CALCULATOR ASSISTANCE FLOW:**
+- If the user chooses "Assist me here", gather their requirements conversationally.
+- Once you have enough info, summarize it and provide the command to update the calculator. The format MUST be \`[CALCULATOR_JSON]:<JSON_OBJECT>\`. The JSON object must be a single line with no newlines. All JSON keys MUST be in double quotes.
+- Example: \`I've got the details... [CALCULATOR_JSON]:{"designTier":2,"standardPages":5,"userAuth":false}\`
+- Valid JSON keys/types: "designTier"(number), "standardPages"(number), "complexPages"(number), "systemPages"(number), "cmsType"(string: "0", "100000", "250000"), "products"(number), "userAuth"(boolean), "paymentGateway"(boolean), "apis"(number).
 
-**IMPORTANT RULES:**
+**4. BUDGETS & ALTERNATIVES (THE "CALCULATING" MODE):**
+- This is your most important task. When a user provides a budget or asks for an alternative, you MUST use the following rigorous, iterative process.
 
-1.  **MAINTAIN CONTEXT:** Always treat the conversation as a single, continuous dialogue.
+- **Step A: Acknowledge & Trigger UI:** Your response MUST begin with the special command \`[ACTION:CALCULATING]\` on its own line. This tells the user you are "thinking".
 
-2.  **PRICING INTENT:**
-    - If a user asks a general cost question (e.g., "What was the cost of the e-commerce project?"), answer it normally.
-    - **Only if the user clearly wants a price estimate for THEIR OWN project** (e.g., "How much would my website cost?"), you MUST respond with ONLY the special command: \`[ACTION:PRICING]\`.
+- **Step B: Internal Monologue (Your "Invisible Calculator" Session):**
+    - You will now perform a "Chain of Thought" analysis. You MUST wrap this entire internal monologue, including all your calculation attempts and final verification, inside special tags: \`<internal_monologue>...\</internal_monologue>\`.
+    - **This content will be stripped out and is for your eyes only.**
+    - Inside these tags, your monologue MUST follow this structure:
+        - **1. Goal Definition:** State the user's goal. (e.g., "Goal: Find a configuration for a ₦800,000 budget."). If the budget is in USD, state the conversion (1 USD = 1550 NGN) and use NGN for all calculations.
+        - **2. Iterative Search:** Try different combinations of Tiers, Pages, and Features. For EACH attempt, write down the full calculation (summing all components from the formula list) and the resulting total. (e.g., "Attempt 1: Base (250k) + Tier 2 (200k) + 5 Pages (125k) = 575k. Result: Too low."). Continue until you find a satisfactory combination that gets as close as possible to the user's budget without exceeding it.
+        - **3. Final Verification:** This is a MANDATORY step. Once you have a final configuration, perform the calculation one last time to get the exact total. You must lay it out clearly.
+            - Example:
+              \`FINAL VERIFICATION:
+              - Configuration: { "designTier": 2, "standardPages": 10, ... }
+              - Calculation: 250000 (Base) + 200000 (Tier 2) + 250000 (10 Std Pages) = 700000.
+              - Confirmed Total: 700000.\`
 
-3.  **CALCULATOR ASSISTANCE FLOW:**
-    - After you send \`[ACTION:PRICING]\`, the user will get options. If they choose "Please assist me here", your job is to gather their requirements conversationally.
-    - Once you have enough information, summarize it and provide the special command to update the calculator. The format MUST be \`[CALCULATOR_JSON]:<JSON_OBJECT>\`. The JSON object must be a single line with no newlines.
-    - **Example JSON command:** \`I've got the details... [CALCULATOR_JSON]:{"designTier":2,"standardPages":5}\`
-    - The JSON keys must be: 'designTier', 'standardPages', 'complexPages', 'systemPages', 'cmsType' (values: '0', '100000', '250000'), 'products', 'userAuth', 'paymentGateway', 'apis'.
+- **Step C: Formulate Final User-Facing Response:**
+    - After your internal monologue is complete, formulate the response for the user.
+    - This user-facing response MUST be OUTSIDE the \`<internal_monologue>\` tags.
+    - The natural language explanation AND the \`[CALCULATOR_JSON]:{...}\` command MUST be generated SOLELY from the data in your "Final Verification" step. This ensures perfect consistency.
 
-4.  **BUDGET OPTIMIZATION FLOW (CRITICAL):**
-    - When a user provides a specific budget (e.g., "my budget is 500k"), you must use your internal calculation ability to find a suitable project scope. This is a multi-step internal process for you.
-    - **Step 1: Acknowledge and Activate.** Your response MUST begin with the special command \`[ACTION:CALCULATING]\` on its own line.
-    - **Step 2: Internal Iteration (Your Thought Process).**
-        - Start with a reasonable baseline (e.g., Tier 1 design, a few pages).
-        - Calculate the cost step-by-step using the **INTERNAL CALCULATION FORMULA**. Add up each component precisely as specified.
-        - Compare the total to the user's budget.
-        - If the cost is too high, remove or downgrade features (e.g., lower the design tier, reduce pages, remove user auth). If it's too low, add valuable features.
-        - Repeat this calculation internally until you find a configuration that is close to, but not over, the user's budget.
-    - **Step 3: Formulate Response.**
-        - Once you have a final configuration, explain your reasoning to the user. Tell them what you included and why, to meet their budget. State the final calculated price.
-    - **Step 4: Provide Final Command.** After your explanation, you MUST provide the final \`[CALCULATOR_JSON]:{...}\` command with the configuration you settled on.
-    - **Example Full Response for Budget:**
-      \`\`\`
-      [ACTION:CALCULATING]
-      
-      Okay, working with a budget of ₦500,000. To make that work, I've put together a package that focuses on the essentials while still delivering a professional result. I've selected a Tier 1 (Template Customization) design and included 3 standard pages (like Home, About, Contact). Based on the formula, this comes to ₦425,000. This gives you a great starting point.
-      
-      [CALCULATOR_JSON]:{"designTier":1,"standardPages":3,"complexPages":0,"systemPages":0,"cmsType":"0","products":0,"userAuth":false,"paymentGateway":false,"apis":0}
-      \`\`\`
-
-5.  **SUGGESTING ALTERNATIVES:**
-    - If a user asks for an "alternative", "different suggestion", or a "new suggestion" based on a current price or a previous suggestion, your goal is to re-run your internal calculation.
-    - You MUST change the feature mix significantly. For example, trade a higher design tier for fewer pages, or add user auth by removing e-commerce. Don't just change page counts by one or two. Be creative with the trade-offs.
-    - Acknowledge the request, perform the calculation (internally, using the same [ACTION:CALCULATING] process), explain the new trade-offs, and provide the final \`[CALCULATOR_JSON]\` command.
-
-Do not make up information about projects or contact details not present on the site.`;
+**5. FINAL OUTPUT EXAMPLE (ABSOLUTELY CRITICAL):**
+- Your final raw output must look like this. A hidden monologue followed by a clean, visible message.
+- **CORRECT FORMAT:**
+\`<internal_monologue>
+Goal: Find config for ₦700k.
+Attempt 1: ... too low.
+FINAL VERIFICATION: ... Confirmed Total: 700000.
+</internal_monologue>
+Okay, I have a suggestion that fits your budget. It includes a Tier 2 design and 10 standard pages for a total of ₦700,000. [CALCULATOR_JSON]:{"designTier":2,"standardPages":10, ...}\`
+- **DO NOT** let any of your calculations, attempts, or words like "Verification" appear in the final message to the user.
+`;
 
     useEffect(() => {
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            const chatSession = ai.chats.create({
-                model: 'gemini-2.5-flash',
-                config: { systemInstruction },
-            });
-            setChat(chatSession);
-        } catch (error) {
-            console.error("Failed to initialize Gemini AI:", error);
-            setMessages([{ role: 'model', text: 'Sorry, I am unable to connect right now.' }]);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (isOpen && !hasSentWelcome.current && chat && messages.length === 0) {
+        if (isOpen && !hasSentWelcome.current && messages.length === 0) {
             hasSentWelcome.current = true;
             setMessages([{ role: 'model', text: "Hi! I'm Amir, an AI assistant. How can I help you learn more about Yusuf's work?" }]);
         }
-    }, [isOpen, chat, messages]);
+    }, [isOpen, messages]);
 
     useEffect(() => {
         if (isOpen) {
@@ -165,28 +146,50 @@ Do not make up information about projects or contact details not present on the 
     }, []);
 
     const processFinalResponse = (text: string) => {
-        let textForDisplay = text;
+        const cleanedTextForDisplay = text.replace(/<internal_monologue>[\s\S]*?<\/internal_monologue>/g, '').trim();
+
+        let textForDisplay = cleanedTextForDisplay;
         let hasPricingAction = false;
         let hasCalculatorUpdate = false;
         let newSelectionsData: Selections | null = null;
 
-        if (text.includes('[CALCULATOR_JSON]:')) {
+        if (textForDisplay.includes('[CALCULATOR_JSON]:')) {
             hasCalculatorUpdate = true;
-            const parts = text.split('[CALCULATOR_JSON]:');
+            const parts = textForDisplay.split('[CALCULATOR_JSON]:');
             textForDisplay = parts[0].trim();
-            const jsonPart = parts[1].trim();
-            try {
-                const newSelections = JSON.parse(jsonPart);
-                newSelectionsData = { ...initialSelections, ...newSelections };
-            } catch (e) {
-                console.error("Failed to parse calculator JSON:", e);
-                textForDisplay = text;
+            const potentialJsonPart = parts[1];
+
+            const jsonStartIndex = potentialJsonPart.indexOf('{');
+            const jsonEndIndex = potentialJsonPart.lastIndexOf('}');
+            
+            if (jsonStartIndex !== -1 && jsonEndIndex !== -1 && jsonEndIndex > jsonStartIndex) {
+                const jsonString = potentialJsonPart.substring(jsonStartIndex, jsonEndIndex + 1);
+                try {
+                    const newSelections = JSON.parse(jsonString);
+                    newSelectionsData = { ...initialSelections, ...newSelections };
+
+                    const trailingText = potentialJsonPart.substring(jsonEndIndex + 1).trim();
+                    if (trailingText) {
+                        textForDisplay += ` ${trailingText}`;
+                    }
+
+                } catch (e) {
+                    console.error("Failed to parse calculator JSON:", e, "Raw JSON:", jsonString);
+                    textForDisplay = "I seem to have run into a small issue with formatting my response. Could you try asking that again?";
+                }
+            } else {
+                console.error("Could not find a valid JSON object after [CALCULATOR_JSON]:", potentialJsonPart);
+                textForDisplay = "I had trouble generating the calculator configuration. Let's try that again.";
             }
         }
 
         if (textForDisplay.trim() === '[ACTION:PRICING]') {
             hasPricingAction = true;
             textForDisplay = 'I can help with that. Would you like to go to the pricing calculator or have me adjust it for you based on our conversation?';
+        }
+        
+        if (!textForDisplay) {
+            textForDisplay = "Sorry, I seem to be having trouble connecting. Please check your connection or try again in a moment.";
         }
 
         setMessages(prev => [...prev, {
@@ -200,7 +203,6 @@ Do not make up information about projects or contact details not present on the 
             setIsAiSuggestion(true);
             onSelectionsChange(newSelectionsData);
             setLastAiSuggestion(newSelectionsData);
-            // Auto-scroll on desktop, mobile has the button
             setTimeout(() => {
                 document.getElementById('calculator')?.scrollIntoView({ behavior: 'smooth' });
             }, 100);
@@ -208,19 +210,52 @@ Do not make up information about projects or contact details not present on the 
     };
 
     const sendMessageToAi = async (messageText: string) => {
-        if (!chat) return;
-
         setIsLoading(true);
+        
+        const lowerCaseMessage = messageText.toLowerCase();
+        if (lowerCaseMessage.includes('budget') || lowerCaseMessage.includes('cost') || lowerCaseMessage.includes('alternative') || lowerCaseMessage.includes('suggest')) {
+            setLastUserPrompt(messageText);
+        }
+
+        const url = 'https://api.hyperbolic.xyz/v1/chat/completions';
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJha2hpeXV1c3VmQGdtYWlsLmNvbSIsImlhdCI6MTczNTQ4NDEyNn0.qRWbP9v1ydn3_6sOfid4cKNrgXkeJtxePGPJ0HvKpSI'
+        };
+
+        const apiMessages = [
+            { role: 'system', content: systemInstruction },
+            ...messages.map(msg => ({
+                role: msg.role === 'model' ? 'assistant' : 'user',
+                content: msg.text
+            })),
+            { role: 'user', content: messageText }
+        ];
+
+        const body = {
+            model: 'deepseek-ai/DeepSeek-V3-0324',
+            messages: apiMessages,
+            max_tokens: 4096, 
+            temperature: 0.2,
+            top_p: 0.8,
+            stream: false
+        };
+
         try {
-            const lowerCaseMessage = messageText.toLowerCase();
-            if (lowerCaseMessage.includes('budget') || lowerCaseMessage.includes('cost') || lowerCaseMessage.includes('alternative') || lowerCaseMessage.includes('suggest')) {
-                setLastUserPrompt(messageText);
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status} ${response.statusText}`);
             }
 
-            const response = await chat.sendMessage({ message: messageText });
-            const responseText = response.text;
+            const json = await response.json();
+            const responseText = json.choices[0]?.message?.content || '';
 
-            if (responseText.startsWith('[ACTION:CALCULATING]')) {
+            if (responseText.trim().startsWith('[ACTION:CALCULATING]')) {
                 setIsCalculating(true);
                 setIsAiUpdating(true);
                 document.getElementById('calculator')?.scrollIntoView({ behavior: 'smooth' });
@@ -243,13 +278,13 @@ Do not make up information about projects or contact details not present on the 
     };
 
      useEffect(() => {
-        if (initialMessage && chat) {
+        if (initialMessage) {
             const userMessage: Message = { role: 'user', text: initialMessage };
             setMessages(prev => [...prev, userMessage]);
             sendMessageToAi(initialMessage);
             clearInitialMessage();
         }
-    }, [initialMessage, chat]);
+    }, [initialMessage]);
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -1,7 +1,6 @@
 export const PRICING = {
-    baseSetup: 150000,
-    designTierMultiplier: 100000,
-    responsiveDev: 100000,
+    baseFee: 250000, // Merged baseSetup (150k) and responsiveDev (100k)
+    designBaseCost: 100000, // This is the cost for Tier 1. Higher tiers are multiples of this.
     standardPage: 25000,
     complexPage: 45000,
     systemPage: 90000,
@@ -28,16 +27,25 @@ export const initialSelections = {
 export type Selections = typeof initialSelections;
 
 export const calculateTotalCost = (selections: Selections): number => {
-    let total = PRICING.baseSetup + PRICING.responsiveDev;
-    total += PRICING.designTierMultiplier * selections.designTier;
-    total += PRICING.standardPage * selections.standardPages;
-    total += PRICING.complexPage * selections.complexPages;
-    total += PRICING.systemPage * selections.systemPages;
-    total += PRICING.cms[selections.cmsType as keyof typeof PRICING.cms];
-    if (selections.products > 0) total += PRICING.ecommerceBase;
-    total += PRICING.product * selections.products;
-    if (selections.userAuth) total += PRICING.userAuth;
-    if (selections.paymentGateway) total += PRICING.paymentGateway;
-    total += PRICING.apiIntegration * selections.apis;
-    return total;
+    const costComponents = [
+        // Base Costs
+        PRICING.baseFee,
+        PRICING.designBaseCost * selections.designTier,
+
+        // Page Costs
+        PRICING.standardPage * selections.standardPages,
+        PRICING.complexPage * selections.complexPages,
+        PRICING.systemPage * selections.systemPages,
+
+        // Feature Costs
+        PRICING.cms[selections.cmsType as keyof typeof PRICING.cms],
+        selections.products > 0 ? PRICING.ecommerceBase : 0,
+        PRICING.product * selections.products,
+        selections.userAuth ? PRICING.userAuth : 0,
+        selections.paymentGateway ? PRICING.paymentGateway : 0,
+        PRICING.apiIntegration * selections.apis
+    ];
+    
+    // Sum all components to get the total cost
+    return costComponents.reduce((total, current) => total + current, 0);
 };
