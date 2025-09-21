@@ -4,6 +4,7 @@ import Hero from './components/Hero';
 import FeatureSection from './components/FeatureSection';
 import ProjectsSection from './components/ProjectsSection';
 import PricingCalculator from './components/PricingCalculator';
+import { Selections, initialSelections, calculateTotalCost } from './components/pricing';
 import ApiSection from './components/ApiSection';
 import ModelsSection from './components/ModelsSection';
 import CtaFooter from './components/CtaFooter';
@@ -77,6 +78,12 @@ const App: React.FC = () => {
   
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string>('');
+  const [calculatorSelections, setCalculatorSelections] = useState<Selections>(initialSelections);
+
+  const [isAiUpdatingCalculator, setIsAiUpdatingCalculator] = useState(false);
+  const [isAiSuggestion, setIsAiSuggestion] = useState(false);
+  const [lastUserPrompt, setLastUserPrompt] = useState('');
+  const [lastAiSuggestion, setLastAiSuggestion] = useState<Selections | null>(null);
 
   const openModal = (contentKey: 'contact' | 'github') => {
     switch(contentKey) {
@@ -103,6 +110,32 @@ const App: React.FC = () => {
     setIsChatbotOpen(true);
   };
 
+  const handleAiSuggestionDismiss = () => {
+    setIsAiSuggestion(false);
+    setLastAiSuggestion(null);
+  };
+
+  const handleSuggestAlternatives = () => {
+    const totalCost = calculateTotalCost(calculatorSelections);
+    const formattedCost = `₦${totalCost.toLocaleString('en-US')}`;
+    const prompt = `My current project estimate is ${formattedCost}. Can you suggest an alternative configuration with a similar total cost but different features?`;
+    setLastUserPrompt(prompt);
+    setChatInitialMessage(prompt);
+    setIsChatbotOpen(true);
+  };
+
+  const handleGetNewSuggestion = () => {
+    const prompt = "That's a good start, but can you suggest a different combination of features based on our last conversation?";
+    setChatInitialMessage(prompt);
+    setIsChatbotOpen(true);
+  };
+  
+  const handleResetToAiSuggestion = () => {
+    if (lastAiSuggestion) {
+      setCalculatorSelections(lastAiSuggestion);
+    }
+  };
+
   return (
     <div className="bg-[#131314] text-gray-300 font-sans antialiased">
       <Header onContactClick={() => openModal('contact')} />
@@ -124,7 +157,18 @@ const App: React.FC = () => {
           <ProjectsSection />
         </div>
         <div id="calculator">
-            <PricingCalculator onDiscussWithAI={handleDiscussWithAI} />
+            <PricingCalculator 
+              selections={calculatorSelections}
+              onSelectionsChange={setCalculatorSelections}
+              onDiscussWithAI={handleDiscussWithAI} 
+              isAiUpdating={isAiUpdatingCalculator}
+              isAiSuggestion={isAiSuggestion}
+              onAiSuggestionDismiss={handleAiSuggestionDismiss}
+              onSuggestAlternatives={handleSuggestAlternatives}
+              onGetNewSuggestion={handleGetNewSuggestion}
+              lastAiSuggestion={lastAiSuggestion}
+              onResetToAiSuggestion={handleResetToAiSuggestion}
+            />
         </div>
         <ApiSection onGitHubClick={() => openModal('github')} />
         <ModelsSection />
@@ -141,6 +185,11 @@ const App: React.FC = () => {
         setIsOpen={setIsChatbotOpen} 
         initialMessage={chatInitialMessage}
         clearInitialMessage={() => setChatInitialMessage('')}
+        onSelectionsChange={setCalculatorSelections}
+        setIsAiUpdating={setIsAiUpdatingCalculator}
+        setIsAiSuggestion={setIsAiSuggestion}
+        setLastUserPrompt={setLastUserPrompt}
+        setLastAiSuggestion={setLastAiSuggestion}
       />
     </div>
   );

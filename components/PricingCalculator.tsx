@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { CalculatorIcon, SparkleIcon } from './Icons';
+import React, { useState, useMemo, useEffect } from 'react';
+import { CalculatorIcon, SparkleIcon, RefreshIcon, MagicWandIcon, ChatIcon, ResetIcon, ChevronDownIcon } from './Icons';
+import { Selections, initialSelections, calculateTotalCost, PRICING } from './pricing';
 
 // --- Reusable Sub-components ---
 
@@ -9,7 +10,7 @@ interface OptionRowProps {
     children: React.ReactNode;
 }
 const OptionRow: React.FC<OptionRowProps> = ({ name, price, children }) => (
-    <div className="py-4">
+    <div className="py-3">
         <div className="flex justify-between items-center mb-2">
             <span className="font-medium text-gray-300">{name}</span>
             <span className="text-sky-400 font-mono text-sm">{price}</span>
@@ -49,70 +50,176 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ checked, onChange }) => (
 );
 
 // --- Main Pricing Calculator Component ---
-
-const PRICING = {
-    baseSetup: 150000,
-    designTierMultiplier: 100000,
-    responsiveDev: 100000,
-    standardPage: 25000,
-    complexPage: 45000,
-    systemPage: 90000,
-    ecommerceBase: 300000,
-    product: 5000,
-    userAuth: 120000,
-    paymentGateway: 150000,
-    apiIntegration: 100000,
-    cms: { "0": 0, "100000": 100000, "250000": 250000 }
-};
-
-const initialSelections = {
-    designTier: 1,
-    standardPages: 3,
-    complexPages: 0,
-    systemPages: 0,
-    cmsType: "0",
-    products: 0,
-    userAuth: false,
-    paymentGateway: false,
-    apis: 0
-};
-
-type Selections = typeof initialSelections;
-
 interface PricingCalculatorProps {
+    selections: Selections;
+    onSelectionsChange: React.Dispatch<React.SetStateAction<Selections>>;
     onDiscussWithAI: (scopeSummary: string) => void;
+    isAiUpdating: boolean;
+    isAiSuggestion: boolean;
+    onAiSuggestionDismiss: () => void;
+    onSuggestAlternatives: () => void;
+    onGetNewSuggestion: () => void;
+    lastAiSuggestion: Selections | null;
+    onResetToAiSuggestion: () => void;
 }
 
-const PricingCalculator: React.FC<PricingCalculatorProps> = ({ onDiscussWithAI }) => {
-    const [selections, setSelections] = useState<Selections>(initialSelections);
+const formatCurrencyStatic = (amount: number, curr: string) => {
+    const usdRate = 1550;
+    if (curr === 'ngn') {
+        return `₦${amount.toLocaleString('en-US')}`;
+    }
+    return `$${(amount / usdRate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
+// --- Feature Control Components (to avoid duplication) ---
+interface FeatureControlsProps {
+    selections: Selections;
+    updateSelection: <K extends keyof Selections>(key: K, value: Selections[K]) => void;
+}
+
+const FeatureControls: React.FC<FeatureControlsProps> = ({ selections, updateSelection }) => (
+    <>
+        <div className="md:col-span-2">
+            <OptionRow name="Design Tier" price={`×${selections.designTier} of base`}>
+                <select value={selections.designTier} onChange={e => updateSelection('designTier', parseInt(e.target.value))} className="w-full bg-[#2a2a2a] border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
+                    <option value={1}>Tier 1: Template Customization</option>
+                    <option value={2}>Tier 2: Custom Design</option>
+                    <option value={3}>Tier 3: Premium Custom</option>
+                    <option value={4}>Tier 4: Enterprise-grade</option>
+                </select>
+            </OptionRow>
+        </div>
+        <OptionRow name="Standard Pages" price={formatCurrencyStatic(PRICING.standardPage, 'ngn') + '/p'}>
+            <SliderInput value={selections.standardPages} onChange={v => updateSelection('standardPages', v)} />
+        </OptionRow>
+        <OptionRow name="Complex Pages" price={formatCurrencyStatic(PRICING.complexPage, 'ngn') + '/p'}>
+            <SliderInput value={selections.complexPages} onChange={v => updateSelection('complexPages', v)} />
+        </OptionRow>
+        <OptionRow name="System Pages" price={formatCurrencyStatic(PRICING.systemPage, 'ngn') + '/p'}>
+            <SliderInput value={selections.systemPages} onChange={v => updateSelection('systemPages', v)} max={5} />
+        </OptionRow>
+         <OptionRow name="API Integrations" price={formatCurrencyStatic(PRICING.apiIntegration, 'ngn') + '/API'}>
+            <SliderInput value={selections.apis} onChange={v => updateSelection('apis', v)} max={10} />
+        </OptionRow>
+        <div className="md:col-span-2">
+            <OptionRow name="Content Management (CMS)" price={selections.cmsType !== "0" ? "One-time" : "None"}>
+                <select value={selections.cmsType} onChange={e => updateSelection('cmsType', e.target.value)} className="w-full bg-[#2a2a2a] border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
+                    <option value="0">None</option>
+                    <option value="100000">Headless CMS (e.g., Sanity)</option>
+                    <option value="250000">Traditional CMS (e.g., WordPress)</option>
+                </select>
+            </OptionRow>
+        </div>
+        <div className="md:col-span-2">
+            <OptionRow name="Number of Products (for E-commerce)" price={formatCurrencyStatic(PRICING.product, 'ngn') + '/prod'}>
+                <SliderInput value={selections.products} onChange={v => updateSelection('products', v)} max={200} />
+            </OptionRow>
+        </div>
+        <OptionRow name="User Authentication" price={formatCurrencyStatic(PRICING.userAuth, 'ngn')}>
+            <ToggleSwitch checked={selections.userAuth} onChange={v => updateSelection('userAuth', v)} />
+        </OptionRow>
+        <OptionRow name="Payment Gateway" price={formatCurrencyStatic(PRICING.paymentGateway, 'ngn')}>
+            <ToggleSwitch checked={selections.paymentGateway} onChange={v => updateSelection('paymentGateway', v)} />
+        </OptionRow>
+    </>
+);
+
+const CoreFeaturesControls: React.FC<FeatureControlsProps> = ({ selections, updateSelection }) => (
+    <>
+        <div className="md:col-span-2">
+            <OptionRow name="Design Tier" price={`×${selections.designTier} of base`}>
+                <select value={selections.designTier} onChange={e => updateSelection('designTier', parseInt(e.target.value))} className="w-full bg-[#2a2a2a] border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
+                    <option value={1}>Tier 1: Template Customization</option>
+                    <option value={2}>Tier 2: Custom Design</option>
+                    <option value={3}>Tier 3: Premium Custom</option>
+                    <option value={4}>Tier 4: Enterprise-grade</option>
+                </select>
+            </OptionRow>
+        </div>
+        <OptionRow name="Standard Pages" price={formatCurrencyStatic(PRICING.standardPage, 'ngn') + '/p'}>
+            <SliderInput value={selections.standardPages} onChange={v => updateSelection('standardPages', v)} />
+        </OptionRow>
+        <OptionRow name="Complex Pages" price={formatCurrencyStatic(PRICING.complexPage, 'ngn') + '/p'}>
+            <SliderInput value={selections.complexPages} onChange={v => updateSelection('complexPages', v)} />
+        </OptionRow>
+        <OptionRow name="System Pages" price={formatCurrencyStatic(PRICING.systemPage, 'ngn') + '/p'}>
+            <SliderInput value={selections.systemPages} onChange={v => updateSelection('systemPages', v)} max={5} />
+        </OptionRow>
+    </>
+);
+
+const AdvancedFeaturesControls: React.FC<FeatureControlsProps> = ({ selections, updateSelection }) => (
+    <>
+        <OptionRow name="API Integrations" price={formatCurrencyStatic(PRICING.apiIntegration, 'ngn') + '/API'}>
+            <SliderInput value={selections.apis} onChange={v => updateSelection('apis', v)} max={10} />
+        </OptionRow>
+        <div className="md:col-span-2">
+            <OptionRow name="Content Management (CMS)" price={selections.cmsType !== "0" ? "One-time" : "None"}>
+                <select value={selections.cmsType} onChange={e => updateSelection('cmsType', e.target.value)} className="w-full bg-[#2a2a2a] border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
+                    <option value="0">None</option>
+                    <option value="100000">Headless CMS (e.g., Sanity)</option>
+                    <option value="250000">Traditional CMS (e.g., WordPress)</option>
+                </select>
+            </OptionRow>
+        </div>
+        <div className="md:col-span-2">
+            <OptionRow name="Number of Products (for E-commerce)" price={formatCurrencyStatic(PRICING.product, 'ngn') + '/prod'}>
+                <SliderInput value={selections.products} onChange={v => updateSelection('products', v)} max={200} />
+            </OptionRow>
+        </div>
+        <OptionRow name="User Authentication" price={formatCurrencyStatic(PRICING.userAuth, 'ngn')}>
+            <ToggleSwitch checked={selections.userAuth} onChange={v => updateSelection('userAuth', v)} />
+        </OptionRow>
+        <OptionRow name="Payment Gateway" price={formatCurrencyStatic(PRICING.paymentGateway, 'ngn')}>
+            <ToggleSwitch checked={selections.paymentGateway} onChange={v => updateSelection('paymentGateway', v)} />
+        </OptionRow>
+    </>
+);
+
+
+const PricingCalculator: React.FC<PricingCalculatorProps> = ({ 
+    selections, 
+    onSelectionsChange, 
+    onDiscussWithAI,
+    isAiUpdating,
+    isAiSuggestion,
+    onAiSuggestionDismiss,
+    onSuggestAlternatives,
+    onGetNewSuggestion,
+    lastAiSuggestion,
+    onResetToAiSuggestion,
+}) => {
     const [currency, setCurrency] = useState('ngn');
+    const [mobileView, setMobileView] = useState<'options' | 'summary'>('options');
+    const [mobileFeatureSection, setMobileFeatureSection] = useState<'core' | 'advanced'>('core');
+    const [openSections, setOpenSections] = useState<string[]>(['core', 'advanced']);
+
+    const toggleSection = (sectionId: string) => {
+        setOpenSections(prev => 
+            prev.includes(sectionId) 
+                ? prev.filter(id => id !== sectionId)
+                : [...prev, sectionId]
+        );
+    };
     
+    useEffect(() => {
+        if (isAiUpdating) {
+            setMobileView('options');
+        }
+    }, [isAiUpdating]);
+
     const updateSelection = <K extends keyof Selections>(key: K, value: Selections[K]) => {
-        setSelections(prev => ({ ...prev, [key]: value }));
+        onSelectionsChange(prev => ({ ...prev, [key]: value }));
+        if (isAiSuggestion) {
+            // This is a manual user change, so the pristine state is broken.
+        }
     };
 
     const formatCurrency = (amount: number, curr: string) => {
-        const usdRate = 1550;
-        if (curr === 'ngn') {
-            return `₦${amount.toLocaleString('en-US')}`;
-        }
-        return `$${(amount / usdRate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        return formatCurrencyStatic(amount, curr);
     };
 
-    const totalCost = useMemo(() => {
-        let total = PRICING.baseSetup + PRICING.responsiveDev;
-        total += PRICING.designTierMultiplier * selections.designTier;
-        total += PRICING.standardPage * selections.standardPages;
-        total += PRICING.complexPage * selections.complexPages;
-        total += PRICING.systemPage * selections.systemPages;
-        total += PRICING.cms[selections.cmsType as keyof typeof PRICING.cms];
-        if (selections.products > 0) total += PRICING.ecommerceBase;
-        total += PRICING.product * selections.products;
-        if (selections.userAuth) total += PRICING.userAuth;
-        if (selections.paymentGateway) total += PRICING.paymentGateway;
-        total += PRICING.apiIntegration * selections.apis;
-        return total;
-    }, [selections]);
+    const totalCost = useMemo(() => calculateTotalCost(selections), [selections]);
 
     const milestones = useMemo(() => {
         const structure = [
@@ -150,6 +257,42 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({ onDiscussWithAI }
         
         onDiscussWithAI(summary);
     };
+    
+    const handleReset = () => {
+        onSelectionsChange(initialSelections);
+        onAiSuggestionDismiss();
+    };
+    
+    const AiSuggestionBanner = () => {
+        if (!isAiSuggestion || !lastAiSuggestion) return null;
+
+        const isPristineSuggestion = JSON.stringify(selections) === JSON.stringify(lastAiSuggestion);
+
+        if (isPristineSuggestion) {
+            return (
+                <div className="bg-sky-900/50 border border-sky-700 text-sky-300 text-sm rounded-lg p-3 my-4 flex items-center gap-3 animate-fade-in-scale">
+                    <SparkleIcon />
+                    <span>This estimate was suggested by the AI assistant.</span>
+                </div>
+            );
+        } else {
+            return (
+                 <div className="bg-amber-900/50 border border-amber-700 text-amber-300 text-sm rounded-lg p-3 my-4 flex items-center justify-between gap-3 animate-fade-in-scale">
+                    <span>You've modified the AI suggestion.</span>
+                    <button onClick={onResetToAiSuggestion} className="flex items-center gap-1.5 text-xs font-semibold hover:text-white transition-colors shrink-0">
+                        <RefreshIcon className="w-4 h-4" />
+                        <span>Reset</span>
+                    </button>
+                </div>
+            );
+        }
+    };
+
+    const buttonContainerClasses = isAiSuggestion
+        ? "mt-6 lg:mt-auto grid grid-cols-2 gap-3"
+        : "mt-6 lg:mt-auto grid grid-cols-1 sm:grid-cols-3 gap-3";
+    
+    const featureControlsProps = { selections, updateSelection };
 
     return (
         <section className="py-24">
@@ -160,73 +303,120 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({ onDiscussWithAI }
                 <p className="text-gray-400 mt-2 max-w-2xl mx-auto">Use this calculator to get a ballpark figure for your project. Prices are estimates and may vary.</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 max-w-7xl mx-auto">
+             {/* MOBILE-ONLY STICKY HEADER */}
+            <div className="lg:hidden sticky top-16 bg-[#131314] z-20 py-4 border-b border-gray-800 -mx-4 px-4 sm:-mx-6 sm:px-6">
+                <div className="max-w-lg mx-auto">
+                    <div className="flex justify-between items-center mb-3">
+                        <span className="text-gray-400">Estimated Total:</span>
+                        <span className="text-2xl font-bold text-white tracking-tight">{formatCurrency(totalCost, currency)}</span>
+                    </div>
+                    <div className="flex bg-[#2a2a2a] p-1 rounded-md text-sm">
+                        <button onClick={() => setMobileView('options')} className={`w-1/2 py-2 rounded transition-colors ${mobileView === 'options' ? 'bg-[#3a3a3a] text-white' : 'text-gray-400'}`}>
+                            Project Features
+                        </button>
+                        <button onClick={() => setMobileView('summary')} className={`w-1/2 py-2 rounded transition-colors ${mobileView === 'summary' ? 'bg-[#3a3a3a] text-white' : 'text-gray-400'}`}>
+                            Cost Summary
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 lg:gap-12 lg:mt-0">
                 {/* Options Panel */}
-                <div className="lg:col-span-3 bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 divide-y divide-gray-800">
-                    <h3 className="text-2xl font-medium text-white pb-4">Project Features</h3>
+                <div className={`
+                    ${mobileView === 'options' ? 'block' : 'hidden'} lg:block
+                    w-full lg:w-1/2 order-2 lg:order-1 bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 relative mt-6 lg:mt-0
+                `}>
+                    {isAiUpdating && (
+                        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-xl animate-fade-in-scale">
+                            <SparkleIcon className="w-8 h-8 text-sky-400" />
+                            <p className="text-white text-lg font-medium mt-2">AI is updating your estimate...</p>
+                        </div>
+                    )}
+                    <h3 className="text-2xl font-medium text-white pb-4 border-b border-gray-800">Project Features</h3>
                     
-                    <OptionRow name="Design Tier" price={`×${selections.designTier} of base`}>
-                        <select value={selections.designTier} onChange={e => updateSelection('designTier', parseInt(e.target.value))} className="w-full bg-[#2a2a2a] border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
-                            <option value={1}>Tier 1: Template Customization</option>
-                            <option value={2}>Tier 2: Custom Design</option>
-                            <option value={3}>Tier 3: Premium Custom</option>
-                            <option value={4}>Tier 4: Enterprise-grade</option>
-                        </select>
-                    </OptionRow>
+                    {/* DESKTOP: Single 2-column grid */}
+                    <div className="hidden lg:grid grid-cols-1 md:grid-cols-2 gap-x-8 pt-4">
+                        <FeatureControls {...featureControlsProps} />
+                    </div>
 
-                    <OptionRow name="Standard Pages (e.g., Home, About)" price={formatCurrency(PRICING.standardPage, 'ngn') + '/page'}>
-                        <SliderInput value={selections.standardPages} onChange={v => updateSelection('standardPages', v)} />
-                    </OptionRow>
+                    {/* MOBILE: Tabbed, grouped (accordion) layout */}
+                    <div className="lg:hidden">
+                        <AiSuggestionBanner />
+                        <div className="flex border-b border-gray-800 text-center">
+                            <button onClick={() => setMobileFeatureSection('core')} className={`w-1/2 p-3 text-sm font-medium transition-colors ${mobileFeatureSection === 'core' ? 'text-white border-b-2 border-sky-500' : 'text-gray-400'}`}>
+                                1. Core Setup
+                            </button>
+                            <button onClick={() => setMobileFeatureSection('advanced')} className={`w-1/2 p-3 text-sm font-medium transition-colors ${mobileFeatureSection === 'advanced' ? 'text-white border-b-2 border-sky-500' : 'text-gray-400'}`}>
+                                2. Advanced Features
+                            </button>
+                        </div>
 
-                    <OptionRow name="Complex Pages (e.g., Dashboard)" price={formatCurrency(PRICING.complexPage, 'ngn') + '/page'}>
-                        <SliderInput value={selections.complexPages} onChange={v => updateSelection('complexPages', v)} />
-                    </OptionRow>
-                    
-                    <OptionRow name="System Pages (e.g., Auth)" price={formatCurrency(PRICING.systemPage, 'ngn') + '/page'}>
-                        <SliderInput value={selections.systemPages} onChange={v => updateSelection('systemPages', v)} max={5} />
-                    </OptionRow>
-
-                    <OptionRow name="Content Management (CMS)" price={selections.cmsType !== "0" ? "One-time" : "None"}>
-                       <select value={selections.cmsType} onChange={e => updateSelection('cmsType', e.target.value)} className="w-full bg-[#2a2a2a] border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
-                            <option value="0">None</option>
-                            <option value="100000">Headless CMS (e.g., Sanity)</option>
-                            <option value="250000">Traditional CMS (e.g., WordPress)</option>
-                        </select>
-                    </OptionRow>
-
-                    <OptionRow name="Number of Products (for E-commerce)" price={formatCurrency(PRICING.product, 'ngn') + '/product'}>
-                        <SliderInput value={selections.products} onChange={v => updateSelection('products', v)} max={200} />
-                    </OptionRow>
-
-                    <OptionRow name="User Authentication" price={formatCurrency(PRICING.userAuth, 'ngn')}>
-                        <ToggleSwitch checked={selections.userAuth} onChange={v => updateSelection('userAuth', v)} />
-                    </OptionRow>
-
-                     <OptionRow name="Payment Gateway" price={formatCurrency(PRICING.paymentGateway, 'ngn')}>
-                        <ToggleSwitch checked={selections.paymentGateway} onChange={v => updateSelection('paymentGateway', v)} />
-                    </OptionRow>
-
-                    <OptionRow name="External API Integrations" price={formatCurrency(PRICING.apiIntegration, 'ngn') + '/API'}>
-                        <SliderInput value={selections.apis} onChange={v => updateSelection('apis', v)} max={10} />
-                    </OptionRow>
+                        <div className="pt-2">
+                             {mobileFeatureSection === 'core' && (
+                                <div>
+                                    <button onClick={() => toggleSection('core')} className="w-full flex justify-between items-center py-3 text-lg font-medium text-white">
+                                        <span>Core Setup & Pages</span>
+                                        <ChevronDownIcon className={`w-5 h-5 transition-transform duration-200 ${openSections.includes('core') ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    {openSections.includes('core') && (
+                                        <div className="pl-4 pr-2 pb-2 border-l-2 border-gray-700/50">
+                                            <CoreFeaturesControls {...featureControlsProps} />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            {mobileFeatureSection === 'advanced' && (
+                                 <div className="border-t border-gray-800">
+                                     <button onClick={() => toggleSection('advanced')} className="w-full flex justify-between items-center py-3 text-lg font-medium text-white">
+                                        <span>Advanced Features & Integrations</span>
+                                        <ChevronDownIcon className={`w-5 h-5 transition-transform duration-200 ${openSections.includes('advanced') ? 'rotate-180' : ''}`} />
+                                    </button>
+                                     {openSections.includes('advanced') && (
+                                        <div className="pl-4 pr-2 pb-2 border-l-2 border-gray-700/50">
+                                            <AdvancedFeaturesControls {...featureControlsProps} />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Summary Panel */}
-                <div className="lg:col-span-2 bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 h-fit sticky top-24">
+                <div className={`
+                    ${mobileView === 'summary' ? 'block' : 'hidden'} lg:block
+                    w-full lg:w-1/2 order-1 lg:order-2 bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 lg:sticky lg:top-24 mt-6 lg:mt-0 lg:flex lg:flex-col
+                `}>
                     <h3 className="text-2xl font-medium text-white pb-4 border-b border-gray-800">Estimate Summary</h3>
                     
-                    <div className="my-4">
+                    <div className="hidden lg:block">
+                        <AiSuggestionBanner />
+                    </div>
+
+                    {/* Desktop-only total and currency switch */}
+                    <div className="hidden lg:block">
+                        <div className="my-4">
+                            <div className="flex bg-[#2a2a2a] p-1 rounded-md text-sm">
+                                <button onClick={() => setCurrency('ngn')} className={`w-1/2 py-2 rounded ${currency === 'ngn' ? 'bg-[#3a3a3a] text-white' : 'text-gray-400'}`}>NGN</button>
+                                <button onClick={() => setCurrency('usd')} className={`w-1/2 py-2 rounded ${currency === 'usd' ? 'bg-[#3a3a3a] text-white' : 'text-gray-400'}`}>USD</button>
+                            </div>
+                        </div>
+                        <div className="text-center my-6">
+                            <p className="text-gray-400 text-sm">Total Estimated Cost</p>
+                            <p className="text-5xl font-bold text-white tracking-tight">{formatCurrency(totalCost, currency)}</p>
+                        </div>
+                    </div>
+
+                     {/* Mobile-only currency switch */}
+                    <div className="block lg:hidden my-4">
+                        <p className="text-gray-400 text-sm mb-2">Display Currency</p>
                         <div className="flex bg-[#2a2a2a] p-1 rounded-md text-sm">
-                            <button onClick={() => setCurrency('ngn')} className={`w-1/2 py-2 rounded ${currency === 'ngn' ? 'bg-[#3a3a3a] text-white' : 'text-gray-400'}`}>NGN</button>
-                            <button onClick={() => setCurrency('usd')} className={`w-1/2 py-2 rounded ${currency === 'usd' ? 'bg-[#3a3a3a] text-white' : 'text-gray-400'}`}>USD</button>
+                           <button onClick={() => setCurrency('ngn')} className={`w-1/2 py-2 rounded ${currency === 'ngn' ? 'bg-[#3a3a3a] text-white' : 'text-gray-400'}`}>NGN (₦)</button>
+                           <button onClick={() => setCurrency('usd')} className={`w-1/2 py-2 rounded ${currency === 'usd' ? 'bg-[#3a3a3a] text-white' : 'text-gray-400'}`}>USD ($)</button>
                         </div>
                     </div>
                     
-                    <div className="text-center my-6">
-                        <p className="text-gray-400 text-sm">Total Estimated Cost</p>
-                        <p className="text-5xl font-bold text-white tracking-tight">{formatCurrency(totalCost, currency)}</p>
-                    </div>
-
                     <div className="space-y-4">
                         <h4 className="text-lg font-medium text-white">Payment Milestones</h4>
                         <div className="text-sm text-gray-400">
@@ -239,13 +429,24 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({ onDiscussWithAI }
                         </div>
                     </div>
 
-                    <div className="mt-6 flex items-center space-x-2">
-                         <button onClick={() => setSelections(initialSelections)} className="w-full bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200">
-                            Reset
+                    <div className={buttonContainerClasses}>
+                         {isAiSuggestion && (
+                            <button onClick={onGetNewSuggestion} className="flex items-center justify-center space-x-2 bg-sky-700 hover:bg-sky-800 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200 animate-fade-in-scale">
+                                <RefreshIcon />
+                                <span>New Suggestion</span>
+                            </button>
+                        )}
+                         <button onClick={onSuggestAlternatives} className="flex items-center justify-center space-x-2 bg-gray-600 hover:bg-gray-500 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200">
+                            <MagicWandIcon />
+                            <span>Alternatives</span>
                         </button>
-                         <button onClick={handleDiscuss} className="w-full flex items-center justify-center space-x-2 bg-sky-600 hover:bg-sky-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200">
-                            <SparkleIcon />
-                            <span>Discuss with AI</span>
+                         <button onClick={handleDiscuss} className="flex items-center justify-center space-x-2 bg-sky-600 hover:bg-sky-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200">
+                            <ChatIcon className="w-5 h-5" />
+                            <span>Discuss</span>
+                        </button>
+                        <button onClick={handleReset} className="flex items-center justify-center space-x-2 bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200">
+                            <ResetIcon />
+                            <span>Reset</span>
                         </button>
                     </div>
                 </div>
