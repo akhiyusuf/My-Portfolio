@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { GitHubIcon, TimeIcon } from './Icons';
 
@@ -57,14 +58,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 const CodeLine: React.FC<{ number: number; line: string }> = ({ number, line }) => {
   const highlightedLine = line
-    .replace(/\b(import|from|export|default|const|let|async|function|await|new|if|return|else|window|document)\b/g, '<span class="text-pink-400">$1</span>')
-    .replace(/('.*?'|".*?"|`.*?`)/g, '<span class="text-green-400">$1</span>')
-    .replace(/(\(|\)|\[|\]|\{|\})/g, '<span class="text-gray-500">$1</span>')
-    .replace(/\b(useState|useEffect|fetch|addEventListener|getElementById|onscroll|scrollTo)\b/g, '<span class="text-sky-400">$1</span>');
+    .replace(/\b(import|from|export|default|const|let|async|function|await|new|if|return|else|window|document)\b/g, '<span class="text-pink-500 dark:text-pink-400">$1</span>')
+    .replace(/('.*?'|".*?"|`.*?`)/g, '<span class="text-emerald-600 dark:text-green-400">$1</span>')
+    .replace(/(\(|\)|\[|\]|\{|\})/g, '<span class="text-slate-500 dark:text-gray-500">$1</span>')
+    .replace(/\b(useState|useEffect|fetch|addEventListener|getElementById|onscroll|scrollTo)\b/g, '<span class="text-sky-600 dark:text-sky-400">$1</span>');
 
   return (
     <div>
-      <span className="text-gray-600 w-8 inline-block text-right pr-4 select-none">{number}</span>
+      <span className="text-slate-400 dark:text-gray-600 w-8 inline-block text-right pr-4 select-none">{number}</span>
       <span dangerouslySetInnerHTML={{ __html: highlightedLine }} />
     </div>
   );
@@ -82,35 +83,35 @@ const ApiSection: React.FC<ApiSectionProps> = ({ onGitHubClick }) => {
 
   return (
     <section className="py-24">
-      <h2 className="text-4xl font-medium text-white tracking-tight text-center mb-12">
+      <h2 className="text-4xl font-medium text-slate-900 dark:text-white tracking-tight text-center mb-12">
         A Glimpse Into My Code
       </h2>
-      <div className="max-w-4xl mx-auto bg-[#1a1a1a] rounded-xl p-6 border border-gray-800">
+      <div className="max-w-4xl mx-auto bg-white dark:bg-[#1a1a1a] rounded-xl p-6 border border-slate-200 dark:border-gray-800">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-white font-medium">Clean, Efficient, and Modern Code</h3>
-            <p className="text-gray-400 text-sm flex items-center gap-2 mt-1">
+            <h3 className="text-slate-900 dark:text-white font-medium">Clean, Efficient, and Modern Code</h3>
+            <p className="text-slate-600 dark:text-gray-400 text-sm flex items-center gap-2 mt-1">
               <TimeIcon />
               <span>A glimpse into my approach to writing elegant and functional code.</span>
             </p>
           </div>
-          <div className="bg-[#2a2a2a] p-1 rounded-md text-sm">
+          <div className="bg-slate-100 dark:bg-[#2a2a2a] p-1 rounded-md text-sm">
             <button 
               onClick={() => setLang('nextjs')}
-              className={`px-3 py-1 rounded ${lang === 'nextjs' ? 'bg-[#3a3a3a] text-white' : 'text-gray-400'}`}
+              className={`px-3 py-1 rounded ${lang === 'nextjs' ? 'bg-white dark:bg-[#3a3a3a] text-slate-900 dark:text-white' : 'text-slate-600 dark:text-gray-400'}`}
             >
               Next.js
             </button>
             <button 
               onClick={() => setLang('js')}
-              className={`px-3 py-1 rounded ${lang === 'js' ? 'bg-[#3a3a3a] text-white' : 'text-gray-400'}`}
+              className={`px-3 py-1 rounded ${lang === 'js' ? 'bg-white dark:bg-[#3a3a3a] text-slate-900 dark:text-white' : 'text-slate-600 dark:text-gray-400'}`}
             >
               JavaScript
             </button>
           </div>
         </div>
 
-        <div className="bg-black/50 rounded-lg p-4 font-mono text-sm text-gray-300 overflow-x-auto">
+        <div className="bg-slate-50 dark:bg-black/50 rounded-lg p-4 font-mono text-sm text-slate-700 dark:text-gray-300 overflow-x-auto">
           <pre><code>
             {lines.map((line, index) => (
               <CodeLine key={index} number={index + 1} line={line} />
@@ -121,7 +122,7 @@ const ApiSection: React.FC<ApiSectionProps> = ({ onGitHubClick }) => {
         <div className="mt-6">
           <button 
             onClick={onGitHubClick}
-            className="flex items-center space-x-2 bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200">
+            className="flex items-center space-x-2 bg-slate-900 hover:bg-slate-700 dark:bg-gray-800 dark:hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200">
             <GitHubIcon />
             <span>View on GitHub</span>
           </button>

@@ -1,13 +1,14 @@
+
 import React from 'react';
 import { ModelCardIcon1, ModelCardIcon2, ModelCardIcon3 } from './Icons';
 
 const ModelCard: React.FC<{ title: string; description: string; icon: React.ReactNode }> = ({ title, description, icon }) => (
-  <div className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 flex flex-col justify-between hover:border-gray-600 transition-colors duration-200 min-h-[200px]">
+  <div className="bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-gray-800 rounded-xl p-6 flex flex-col justify-between hover:border-slate-300 dark:hover:border-gray-600 transition-colors duration-200 min-h-[200px]">
     <div>
-      <h3 className="text-xl font-medium text-white">{title}</h3>
-      <p className="text-gray-400 mt-2">{description}</p>
+      <h3 className="text-xl font-medium text-slate-900 dark:text-white">{title}</h3>
+      <p className="text-slate-600 dark:text-gray-400 mt-2">{description}</p>
     </div>
-    <div className="self-end text-gray-600">
+    <div className="self-end text-slate-400 dark:text-gray-600">
       {icon}
     </div>
   </div>
@@ -16,7 +17,7 @@ const ModelCard: React.FC<{ title: string; description: string; icon: React.Reac
 const ModelsSection: React.FC = () => {
   return (
     <section className="py-24">
-      <h2 className="text-4xl font-medium text-white tracking-tight text-center mb-12">
+      <h2 className="text-4xl font-medium text-slate-900 dark:text-white tracking-tight text-center mb-12">
         My Technology Stack
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

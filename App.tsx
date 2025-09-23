@@ -4,7 +4,7 @@ import Hero from './components/Hero';
 import FeatureSection from './components/FeatureSection';
 import ProjectsSection from './components/ProjectsSection';
 import PricingCalculator from './components/PricingCalculator';
-import { Selections, initialSelections, calculateTotalCost } from './components/pricing';
+import { Selections, initialSelections } from './components/pricing';
 import ApiSection from './components/ApiSection';
 import ModelsSection from './components/ModelsSection';
 import CtaFooter from './components/CtaFooter';
@@ -15,22 +15,22 @@ import { GitHubIcon } from './components/Icons';
 
 const ContactForm: React.FC = () => (
   <div>
-    <h2 id="modal-title" className="text-3xl font-medium text-white mb-4">Get in Touch</h2>
-    <p className="text-gray-400 mb-6">Have a project in mind, or just want to connect? Feel free to send me a message. You can reach me directly at <a href="mailto:akhi.yusuf@example.com" className="text-sky-400 hover:underline">akhi.yusuf@example.com</a>.</p>
+    <h2 id="modal-title" className="text-3xl font-medium text-gray-900 dark:text-white mb-4">Get in Touch</h2>
+    <p className="text-gray-600 dark:text-gray-400 mb-6">Have a project in mind, or just want to connect? Feel free to send me a message. You can reach me directly at <a href="mailto:akhi.yusuf@example.com" className="text-sky-500 hover:underline">akhi.yusuf@example.com</a>.</p>
     <form className="space-y-4">
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-300">Name</label>
-        <input type="text" name="name" id="name" className="mt-1 block w-full bg-[#2a2a2a] border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm" placeholder="Your Name" />
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+        <input type="text" name="name" id="name" className="mt-1 block w-full bg-gray-100 dark:bg-[#2a2a2a] border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 text-gray-900 dark:text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm" placeholder="Your Name" />
       </div>
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-300">Email</label>
-        <input type="email" name="email" id="email" className="mt-1 block w-full bg-[#2a2a2a] border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm" placeholder="you@example.com" />
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+        <input type="email" name="email" id="email" className="mt-1 block w-full bg-gray-100 dark:bg-[#2a2a2a] border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 text-gray-900 dark:text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm" placeholder="you@example.com" />
       </div>
       <div>
-        <label htmlFor="message" className="block text-sm font-medium text-gray-300">Message</label>
-        <textarea id="message" name="message" rows={4} className="mt-1 block w-full bg-[#2a2a2a] border border-gray-700 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm" placeholder="Your message..."></textarea>
+        <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Message</label>
+        <textarea id="message" name="message" rows={4} className="mt-1 block w-full bg-gray-100 dark:bg-[#2a2a2a] border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 text-gray-900 dark:text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm" placeholder="Your message..."></textarea>
       </div>
-      <button type="submit" onClick={(e) => e.preventDefault()} className="w-full bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200">
+      <button type="submit" onClick={(e) => e.preventDefault()} className="w-full bg-gray-900 hover:bg-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200">
         Send Message (Simulation)
       </button>
     </form>
@@ -39,9 +39,9 @@ const ContactForm: React.FC = () => (
 
 const GitHubModalContent: React.FC = () => (
     <div>
-        <h2 id="modal-title" className="text-3xl font-medium text-white mb-4">View on GitHub</h2>
-        <p className="text-gray-400 mb-6">This button will take you to my GitHub profile where you can see the source code for my projects, including this portfolio itself!</p>
-        <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center space-x-2 bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200">
+        <h2 id="modal-title" className="text-3xl font-medium text-gray-900 dark:text-white mb-4">View on GitHub</h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">This button will take you to my GitHub profile where you can see the source code for my projects, including this portfolio itself!</p>
+        <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center space-x-2 bg-gray-900 hover:bg-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200">
             <GitHubIcon />
             <span>Continue to GitHub</span>
         </a>
@@ -80,11 +80,6 @@ const App: React.FC = () => {
   const [chatInitialMessage, setChatInitialMessage] = useState<string>('');
   const [calculatorSelections, setCalculatorSelections] = useState<Selections>(initialSelections);
 
-  const [isAiUpdatingCalculator, setIsAiUpdatingCalculator] = useState(false);
-  const [isAiSuggestion, setIsAiSuggestion] = useState(false);
-  const [lastUserPrompt, setLastUserPrompt] = useState('');
-  const [lastAiSuggestion, setLastAiSuggestion] = useState<Selections | null>(null);
-
   const openModal = (contentKey: 'contact' | 'github') => {
     switch(contentKey) {
         case 'contact':
@@ -105,39 +100,21 @@ const App: React.FC = () => {
     document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' });
   };
   
-  const handleDiscussWithAI = (scopeSummary: string) => {
-    setChatInitialMessage(scopeSummary);
+  const handleDiscussWithAi = (summary: string) => {
+    setChatInitialMessage(summary);
     setIsChatbotOpen(true);
   };
 
-  const handleAiSuggestionDismiss = () => {
-    setIsAiSuggestion(false);
-    setLastAiSuggestion(null);
-  };
-
-  const handleSuggestAlternatives = () => {
-    const totalCost = calculateTotalCost(calculatorSelections);
-    const formattedCost = `₦${totalCost.toLocaleString('en-US')}`;
-    const prompt = `My current project estimate is ${formattedCost}. Can you suggest an alternative configuration with a similar total cost but different features?`;
-    setLastUserPrompt(prompt);
-    setChatInitialMessage(prompt);
-    setIsChatbotOpen(true);
-  };
-
-  const handleGetNewSuggestion = () => {
-    const prompt = "That's a good start, but can you suggest a different combination of features based on our last conversation?";
-    setChatInitialMessage(prompt);
-    setIsChatbotOpen(true);
-  };
-  
-  const handleResetToAiSuggestion = () => {
-    if (lastAiSuggestion) {
-      setCalculatorSelections(lastAiSuggestion);
-    }
+  const handleViewCalculatorClick = () => {
+    setIsChatbotOpen(false);
+    // Wait for chat closing animation to finish before scrolling
+    setTimeout(() => {
+        document.getElementById('calculator')?.scrollIntoView({ behavior: 'smooth' });
+    }, 300);
   };
 
   return (
-    <div className="bg-[#131314] text-gray-300 font-sans antialiased">
+    <div className="bg-slate-50 dark:bg-[#131314] text-slate-800 dark:text-gray-300 font-sans antialiased">
       <Header onContactClick={() => openModal('contact')} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Hero onProjectsClick={scrollToProjects} onContactClick={() => openModal('contact')} />
@@ -160,14 +137,7 @@ const App: React.FC = () => {
             <PricingCalculator 
               selections={calculatorSelections}
               onSelectionsChange={setCalculatorSelections}
-              onDiscussWithAI={handleDiscussWithAI} 
-              isAiUpdating={isAiUpdatingCalculator}
-              isAiSuggestion={isAiSuggestion}
-              onAiSuggestionDismiss={handleAiSuggestionDismiss}
-              onSuggestAlternatives={handleSuggestAlternatives}
-              onGetNewSuggestion={handleGetNewSuggestion}
-              lastAiSuggestion={lastAiSuggestion}
-              onResetToAiSuggestion={handleResetToAiSuggestion}
+              onDiscussWithAi={handleDiscussWithAi}
             />
         </div>
         <ApiSection onGitHubClick={() => openModal('github')} />
@@ -185,11 +155,7 @@ const App: React.FC = () => {
         setIsOpen={setIsChatbotOpen} 
         initialMessage={chatInitialMessage}
         clearInitialMessage={() => setChatInitialMessage('')}
-        onSelectionsChange={setCalculatorSelections}
-        setIsAiUpdating={setIsAiUpdatingCalculator}
-        setIsAiSuggestion={setIsAiSuggestion}
-        setLastUserPrompt={setLastUserPrompt}
-        setLastAiSuggestion={setLastAiSuggestion}
+        onViewCalculatorClick={handleViewCalculatorClick}
       />
     </div>
   );

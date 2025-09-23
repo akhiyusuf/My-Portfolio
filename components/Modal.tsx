@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { XIcon } from './Icons';
 
@@ -31,12 +32,12 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
       onClick={onClose}
     >
       <div
-        className="bg-[#1a1a1a] rounded-xl border border-gray-800 shadow-2xl p-8 max-w-lg w-full m-4 relative transform transition-all duration-300 scale-95 opacity-0 animate-fade-in-scale"
+        className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-slate-200 dark:border-gray-800 shadow-2xl p-8 max-w-lg w-full m-4 relative transform transition-all duration-300 scale-95 opacity-0 animate-fade-in-scale"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
+          className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-white transition-colors"
           aria-label="Close modal"
         >
           <XIcon />
