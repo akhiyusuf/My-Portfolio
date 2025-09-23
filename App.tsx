@@ -20,15 +20,15 @@ const ContactForm: React.FC = () => (
     <form className="space-y-4">
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-        <input type="text" name="name" id="name" className="mt-1 block w-full bg-gray-100 dark:bg-[#2a2a2a] border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 text-gray-900 dark:text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm" placeholder="Your Name" />
+        <input type="text" name="name" id="name" className="mt-1 block w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 text-gray-900 dark:text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm" placeholder="Your Name" />
       </div>
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-        <input type="email" name="email" id="email" className="mt-1 block w-full bg-gray-100 dark:bg-[#2a2a2a] border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 text-gray-900 dark:text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm" placeholder="you@example.com" />
+        <input type="email" name="email" id="email" className="mt-1 block w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 text-gray-900 dark:text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm" placeholder="you@example.com" />
       </div>
       <div>
         <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Message</label>
-        <textarea id="message" name="message" rows={4} className="mt-1 block w-full bg-gray-100 dark:bg-[#2a2a2a] border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 text-gray-900 dark:text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm" placeholder="Your message..."></textarea>
+        <textarea id="message" name="message" rows={4} className="mt-1 block w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 text-gray-900 dark:text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm" placeholder="Your message..."></textarea>
       </div>
       <button type="submit" onClick={(e) => e.preventDefault()} className="w-full bg-gray-900 hover:bg-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200">
         Send Message (Simulation)
@@ -80,6 +80,36 @@ const App: React.FC = () => {
   const [chatInitialMessage, setChatInitialMessage] = useState<string>('');
   const [calculatorSelections, setCalculatorSelections] = useState<Selections>(initialSelections);
 
+  // State for services carousel on mobile
+  const [servicesCurrentIndex, setServicesCurrentIndex] = useState(0);
+  const [servicesTouchStart, setServicesTouchStart] = useState<number | null>(null);
+  const [servicesTouchEnd, setServicesTouchEnd] = useState<number | null>(null);
+  const minSwipeDistance = 50;
+
+  const onServicesTouchStart = (e: React.TouchEvent) => {
+    setServicesTouchEnd(null);
+    setServicesTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onServicesTouchMove = (e: React.TouchEvent) => {
+    setServicesTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onServicesTouchEnd = () => {
+    if (!servicesTouchStart || !servicesTouchEnd) return;
+    const distance = servicesTouchStart - servicesTouchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) {
+      setServicesCurrentIndex(prev => Math.min(prev + 1, features.length - 1));
+    }
+    if (isRightSwipe) {
+      setServicesCurrentIndex(prev => Math.max(prev - 1, 0));
+    }
+    setServicesTouchStart(null);
+    setServicesTouchEnd(null);
+  };
+
   const openModal = (contentKey: 'contact' | 'github') => {
     switch(contentKey) {
         case 'contact':
@@ -114,21 +144,62 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="bg-slate-50 dark:bg-[#131314] text-slate-800 dark:text-gray-300 font-sans antialiased">
+    <div className="bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-200 font-sans antialiased">
       <Header onContactClick={() => openModal('contact')} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Hero onProjectsClick={scrollToProjects} onContactClick={() => openModal('contact')} />
-        <div id="services" className="space-y-24 md:space-y-32 py-24">
-          {features.map((feature, index) => (
-            <FeatureSection
-              key={index}
-              label={feature.label}
-              title={feature.title}
-              description={feature.description}
-              imageUrl={feature.imageUrl}
-              reverse={feature.reverse}
-            />
-          ))}
+        <div id="services" className="py-24">
+           {/* Mobile Carousel */}
+          <div className="md:hidden">
+            <div 
+              className="overflow-hidden"
+              onTouchStart={onServicesTouchStart}
+              onTouchMove={onServicesTouchMove}
+              onTouchEnd={onServicesTouchEnd}
+            >
+              <div 
+                className="flex transition-transform duration-300 ease-in-out"
+                style={{ transform: `translateX(-${servicesCurrentIndex * 100}%)` }}
+              >
+                {features.map((feature, index) => (
+                  <div key={index} className="w-full flex-shrink-0">
+                    <FeatureSection
+                      label={feature.label}
+                      title={feature.title}
+                      description={feature.description}
+                      imageUrl={feature.imageUrl}
+                      reverse={feature.reverse}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-center items-center space-x-3 mt-8">
+              {features.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setServicesCurrentIndex(index)}
+                  className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                    servicesCurrentIndex === index ? 'bg-gray-800 dark:bg-white scale-110' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                  aria-label={`Go to service ${index + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+          {/* Desktop View */}
+          <div className="hidden md:block space-y-24 md:space-y-32">
+            {features.map((feature, index) => (
+              <FeatureSection
+                key={index}
+                label={feature.label}
+                title={feature.title}
+                description={feature.description}
+                imageUrl={feature.imageUrl}
+                reverse={feature.reverse}
+              />
+            ))}
+          </div>
         </div>
         <div id="projects">
           <ProjectsSection />

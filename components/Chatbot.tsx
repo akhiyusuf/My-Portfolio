@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI, Chat } from '@google/genai';
-import { ChatIcon, SendIcon, XIcon, ShareIcon, PencilIcon, CalculatorIcon } from './Icons';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { ChatIcon, SendIcon, XIcon, ShareIcon, PencilIcon, CalculatorIcon, SparkleIcon } from './Icons';
 
 // --- START: Custom Markdown Renderer ---
 
@@ -26,7 +25,7 @@ const parseInlineText = (text: string): React.ReactNode => {
 
         if (bold !== undefined) nodes.push(<strong key={lastIndex}>{bold}</strong>);
         else if (italic !== undefined) nodes.push(<em key={lastIndex}>{italic}</em>);
-        else if (code !== undefined) nodes.push(<code key={lastIndex} className="bg-slate-300 dark:bg-gray-800 text-sky-600 dark:text-sky-400 font-mono text-sm rounded px-1.5 py-1">{code}</code>);
+        else if (code !== undefined) nodes.push(<code key={lastIndex} className="bg-gray-200 dark:bg-gray-700/50 text-sky-600 dark:text-sky-400 font-mono text-sm rounded px-1.5 py-1">{code}</code>);
         else if (linkText !== undefined && linkUrl !== undefined) nodes.push(<a href={linkUrl} key={lastIndex} target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:underline">{linkText}</a>);
 
         lastIndex = regex.lastIndex;
@@ -73,7 +72,7 @@ const ParagraphAndListRenderer: React.FC<{ block: string; onViewCalculatorClick?
                                 <React.Fragment key={idx}>
                                     {trimmedPart && <p>{parseInlineText(trimmedPart)}</p>}
                                     {idx < parts.length - 1 && (
-                                        <button onClick={onViewCalculatorClick} className="inline-flex items-center gap-2 bg-slate-200 dark:bg-gray-800 text-slate-800 dark:text-gray-200 font-medium py-2 px-3 rounded-lg my-1 hover:bg-slate-300 dark:hover:bg-gray-700 transition-colors text-sm">
+                                        <button onClick={onViewCalculatorClick} className="inline-flex items-center gap-2 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-medium py-2 px-3 rounded-lg my-1 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-sm">
                                             <CalculatorIcon className="w-4 h-4" />
                                             <span>View Project Calculator</span>
                                         </button>
@@ -120,9 +119,10 @@ const ParagraphAndListRenderer: React.FC<{ block: string; onViewCalculatorClick?
                     i = childrenEndIndex;
                 }
 
-                const ListTag = listType!;
+                const ListTag = listType! as keyof React.JSX.IntrinsicElements;
                 const className = ListTag === 'ul' ? "list-disc pl-5 space-y-1" : "list-decimal pl-5 space-y-1";
-                elements.push(<ListTag key={`list-${level}-${i}`} className={className}>{listItems}</ListTag>);
+                // FIX: Use React.createElement for dynamic list tags to avoid JSX compilation error.
+                elements.push(React.createElement(ListTag, { key: `list-${level}-${i}`, className: className }, listItems));
             } else {
                 i++;
             }
@@ -134,7 +134,7 @@ const ParagraphAndListRenderer: React.FC<{ block: string; onViewCalculatorClick?
     return <>{renderNodes(nodePrototypes)}</>;
 };
 
-const MarkdownRenderer: React.FC<{ content: string; onViewCalculatorClick?: () => void }> = ({ content, onViewCalculatorClick }) => {
+const MarkdownRenderer: React.FC<{ content: string; onViewCalculatorClick?: () => void, className?: string }> = ({ content, onViewCalculatorClick, className }) => {
     const blocks: string[] = [];
     let currentBlockLines: string[] = [];
     content.split('\n').forEach(line => {
@@ -147,32 +147,40 @@ const MarkdownRenderer: React.FC<{ content: string; onViewCalculatorClick?: () =
     });
     if (currentBlockLines.length > 0) blocks.push(currentBlockLines.join('\n'));
     
-    const renderBlock = (block: string, index: number): React.ReactNode => {
+    const renderBlock = (block: string, index: React.Key): React.ReactNode => {
         // Horizontal Rule
-        if (block.match(/^(\*\*\*|---|___)\s*$/)) return <hr key={index} className="my-3 border-slate-300 dark:border-gray-600" />;
+        if (block.match(/^(\*\*\*|---|___)\s*$/)) return <hr key={index} className="my-3 border-gray-300 dark:border-gray-700" />;
         
-        // Headings
-        const headingMatch = block.match(/^(#{1,6})\s(.*)/);
+        // Headings (and content that follows them in the same block)
+        const lines = block.split('\n');
+        const headingMatch = lines[0].match(/^(#{1,6})\s(.*)/);
         if (headingMatch) {
             const level = headingMatch[1].length;
             const text = headingMatch[2];
-            // FIX: Qualify JSX namespace with React to resolve "Cannot find namespace 'JSX'" error.
             const Tag = `h${level}` as keyof React.JSX.IntrinsicElements;
             const sizeClasses = ['text-3xl', 'text-2xl', 'text-xl', 'text-lg', 'text-base', 'text-sm'];
-            const classNames = `${sizeClasses[level-1]} font-bold mt-3 mb-1 ${level < 3 ? 'border-b border-slate-300 dark:border-gray-600 pb-1' : ''}`;
-            return <Tag key={index} className={classNames}>{parseInlineText(text)}</Tag>;
+            const classNames = `${sizeClasses[level-1]} font-bold mt-3 mb-1 ${level < 3 ? 'border-b border-gray-300 dark:border-gray-700 pb-1' : ''}`;
+            // FIX: Use React.createElement for dynamic heading tags to avoid JSX compilation error.
+            const headingElement = React.createElement(Tag, { key: `${index}-h`, className: classNames }, parseInlineText(text));
+
+            const restOfBlock = lines.slice(1).join('\n').trim();
+            if (restOfBlock) {
+                const restElement = renderBlock(restOfBlock, `${index}-rest`);
+                return <div key={index}>{headingElement}{restElement}</div>;
+            }
+            return headingElement;
         }
         
         // Blockquote
         if (block.startsWith('>')) {
             const quoteContent = block.split('\n').map(line => line.replace(/^>\s?/, '')).join('\n');
-            return <blockquote key={index} className="border-l-4 border-slate-300 dark:border-gray-600 pl-4 italic text-slate-600 dark:text-gray-400"><MarkdownRenderer content={quoteContent} onViewCalculatorClick={onViewCalculatorClick} /></blockquote>;
+            return <blockquote key={index} className="border-l-4 border-gray-300 dark:border-gray-700 pl-4 italic text-gray-500 dark:text-gray-400"><MarkdownRenderer content={quoteContent} onViewCalculatorClick={onViewCalculatorClick} /></blockquote>;
         }
 
         // Code blocks
         if (block.startsWith('```') && block.endsWith('```')) {
             const code = block.slice(3, -3).trim();
-            return <pre key={index} className="bg-slate-100 dark:bg-gray-800 p-3 rounded-md overflow-x-auto"><code className="font-mono text-sm">{code}</code></pre>;
+            return <pre key={index} className="bg-gray-100 dark:bg-gray-900 p-3 rounded-md overflow-x-auto"><code className="font-mono text-sm">{code}</code></pre>;
         }
         
         // Table
@@ -184,17 +192,17 @@ const MarkdownRenderer: React.FC<{ content: string; onViewCalculatorClick?: () =
                 
                 if (header.length > 0 && rows.every(r => r.length === header.length)) {
                     return (
-                        <div key={index} className="overflow-x-auto border border-slate-300 dark:border-gray-600 rounded-lg">
+                        <div key={index} className="overflow-x-auto border border-gray-300 dark:border-gray-700 rounded-lg">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="border-b-2 border-slate-300 dark:border-gray-600">
-                                        {header.map((h, i) => <th key={i} className="p-2 font-semibold">{parseInlineText(h)}</th>)}
+                                    <tr className="border-b-2 border-gray-300 dark:border-gray-700">
+                                        {header.map((h, i) => <th key={i} className="p-2 font-semibold text-gray-900 dark:text-white">{parseInlineText(h)}</th>)}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {rows.map((row, i) => (
-                                        <tr key={i} className={`border-b border-slate-200 dark:border-gray-700 ${i === rows.length - 1 ? 'border-b-0' : ''}`}>
-                                            {row.map((cell, j) => <td key={j} className="p-2">{parseInlineText(cell)}</td>)}
+                                        <tr key={i} className={`border-b border-gray-200 dark:border-gray-800 ${i === rows.length - 1 ? 'border-b-0' : ''}`}>
+                                            {row.map((cell, j) => <td key={j} className="p-2 text-gray-700 dark:text-gray-300">{parseInlineText(cell)}</td>)}
                                         </tr>
                                     ))}
                                 </tbody>
@@ -209,7 +217,7 @@ const MarkdownRenderer: React.FC<{ content: string; onViewCalculatorClick?: () =
         return <ParagraphAndListRenderer key={index} block={block} onViewCalculatorClick={onViewCalculatorClick} />;
     };
     
-    return <div className="chatbot-content space-y-4 text-left">{blocks.map(renderBlock)}</div>;
+    return <div className={`chatbot-content text-left ${className || ''}`}>{blocks.map(renderBlock)}</div>;
 };
 // --- END: Custom Markdown Renderer ---
 
@@ -218,6 +226,39 @@ interface Message {
     role: 'user' | 'model';
     text: string;
 }
+
+const suggestedPrompts = [
+    { text: "Tell me about your services", editable: false },
+    { text: "What's your experience with React?", editable: false },
+    { text: "How long would it take to build a [type of website]?", editable: true },
+    { text: "Compare 'Custom Design' and 'Premium Custom' tiers.", editable: false },
+];
+
+const WelcomeScreen: React.FC<{
+    onPromptClick: (prompt: string) => void;
+    onEditablePrompt: (prompt: string) => void;
+}> = ({ onPromptClick, onEditablePrompt }) => (
+    <div className="flex flex-col items-center justify-center h-full text-center p-4 animate-fade-in-scale">
+        <div className="w-16 h-16 bg-sky-100 dark:bg-sky-500/10 rounded-full flex items-center justify-center mb-4">
+             <SparkleIcon className="w-8 h-8 text-sky-500 dark:text-sky-400" />
+        </div>
+        <h2 className="text-xl font-medium text-gray-900 dark:text-white">Hi! I'm Amir, your AI assistant.</h2>
+        <p className="text-gray-600 dark:text-gray-400 mt-1 max-w-xs">Ask me about Yusuf's services, skills, or get help with your project estimate.</p>
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+            {suggestedPrompts.map((prompt, index) => (
+                <button
+                    key={index}
+                    onClick={() => prompt.editable ? onEditablePrompt(prompt.text) : onPromptClick(prompt.text)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-full hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-left"
+                >
+                    {prompt.text}
+                    {prompt.editable && <PencilIcon className="w-3 h-3 text-gray-500 dark:text-gray-400 shrink-0" />}
+                </button>
+            ))}
+        </div>
+    </div>
+);
+
 
 interface ChatbotProps {
     isOpen: boolean;
@@ -238,14 +279,13 @@ const Chatbot: React.FC<ChatbotProps> = ({
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
-    const [showSuggestions, setShowSuggestions] = useState(true);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const shareMenuRef = useRef<HTMLDivElement>(null);
-    const chatRef = useRef<Chat | null>(null);
-    const hasSentWelcome = useRef(false);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const chatWindowRef = useRef<HTMLDivElement>(null);
+    const notificationSound = useRef<HTMLAudioElement | null>(null);
+
 
     // Draggable state
     const [isDragging, setIsDragging] = useState(false);
@@ -270,20 +310,6 @@ Your Core Directives:
 5.  If a conversation gets technical about project costs or specific features, guide them to the pricing calculator. To do this, include the special string \`[action:view_calculator]\` in your response. This will automatically create a button. Crucially, also tell them to use the "Discuss with AI" button within the calculator when they're done to bring their selections back into the conversation. For example: "You can explore those options and get a live estimate using the project calculator. When you're happy with your selections, click the 'Discuss with AI' button there to share them with me! [action:view_calculator]"
 6.  Your primary goal is to build confidence in Yusuf's abilities and guide the user towards contacting him. End conversations by suggesting they use the "Get in Touch" button.`;
 
-    const suggestedPrompts = [
-        { text: "Tell me about your services", editable: false },
-        { text: "What's your experience with React?", editable: false },
-        { text: "How long would it take to build a [type of website]?", editable: true },
-        { text: "Compare 'Custom Design' and 'Premium Custom' tiers.", editable: false },
-    ];
-
-    useEffect(() => {
-        if (isOpen && !hasSentWelcome.current && messages.length === 0) {
-            hasSentWelcome.current = true;
-            setShowSuggestions(true);
-            setMessages([{ role: 'model', text: "Hi! I'm Amir, an AI assistant. I can help you learn about Yusuf's work or discuss your project estimate. How can I help?" }]);
-        }
-    }, [isOpen, messages]);
 
     useEffect(() => {
         if (isOpen) {
@@ -295,6 +321,11 @@ Your Core Directives:
             document.body.classList.remove('chat-open');
         };
     }, [isOpen]);
+
+    useEffect(() => {
+        // Initialize audio on client side
+        notificationSound.current = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+    }, []);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -312,60 +343,117 @@ Your Core Directives:
         };
     }, []);
 
-    const sendMessageToAi = async (messageText: string) => {
+    const sendMessageToAi = useCallback(async (currentChatHistory: Message[]) => {
         setIsLoading(true);
         setMessages(prev => [...prev, { role: 'model', text: '' }]);
 
+        const apiMessages = currentChatHistory.map(msg => ({
+            role: msg.role === 'model' ? 'assistant' : 'user',
+            content: msg.text
+        }));
+
+        const payload = {
+            model: "deepseek-ai/DeepSeek-V3",
+            messages: [
+                { role: 'system', content: systemInstruction },
+                ...apiMessages
+            ],
+            max_tokens: 512,
+            temperature: 0.1,
+            top_p: 0.9,
+            stream: true
+        };
+        
+        let isFirstChunk = true;
+
         try {
-            if (!chatRef.current) {
-                const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-                chatRef.current = ai.chats.create({
-                    model: 'gemini-2.5-flash',
-                    config: {
-                        systemInstruction: systemInstruction,
-                    },
-                });
-            }
-            
-            const response = await chatRef.current.sendMessageStream({ message: messageText });
-            
-            for await (const chunk of response) {
-              const chunkText = chunk.text;
-              setMessages(prev => {
-                  const lastMessage = prev[prev.length - 1];
-                  const updatedLastMessage = { ...lastMessage, text: lastMessage.text + chunkText };
-                  return [...prev.slice(0, -1), updatedLastMessage];
-              });
+            const response = await fetch("https://api.hyperbolic.xyz/v1/chat/completions", {
+                method: 'POST',
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJha2hpeXV1c3VmQGdtYWlsLmNvbSIsImlhdCI6MTczNTQ4NDEyNn0.qRWbP9v1ydn3_6sOfid4cKNrgXkeJtxePGPJ0HvKpSI"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok || !response.body) {
+                const errorBody = await response.text();
+                throw new Error(`API error: ${response.status} ${response.statusText} - ${errorBody}`);
             }
 
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.substring(6).trim();
+                        if (data === '[DONE]') {
+                            return;
+                        }
+                        try {
+                            const json = JSON.parse(data);
+                            const chunkText = json.choices[0]?.delta?.content;
+                            if (chunkText) {
+                                if (isFirstChunk) {
+                                    notificationSound.current?.play().catch(e => console.error("Audio playback failed", e));
+                                    isFirstChunk = false;
+                                }
+                                setMessages(prev => {
+                                    if (prev.length === 0) return prev;
+                                    const lastMessage = prev[prev.length - 1];
+                                    if (lastMessage.role !== 'model') return prev;
+                                    const updatedLastMessage = { ...lastMessage, text: lastMessage.text + chunkText };
+                                    return [...prev.slice(0, -1), updatedLastMessage];
+                                });
+                            }
+                        } catch (e) {
+                            console.error('Error parsing stream chunk:', data, e);
+                        }
+                    }
+                }
+            }
         } catch (error) {
-            console.error("Error sending message to Gemini:", error);
+            console.error("Error sending message to API:", error);
             setMessages(prev => {
                 const lastMessage = prev[prev.length - 1];
-                const updatedLastMessage = { ...lastMessage, text: "Sorry, I encountered an error. Please try again." };
-                return [...prev.slice(0, -1), updatedLastMessage];
+                if (lastMessage && lastMessage.role === 'model' && lastMessage.text === '') {
+                    const updatedLastMessage = { ...lastMessage, text: "Sorry, I encountered an error. Please try again." };
+                    return [...prev.slice(0, -1), updatedLastMessage];
+                }
+                return [...prev, { role: 'model', text: "Sorry, I encountered an error. Please try again." }];
             });
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [systemInstruction]);
 
      useEffect(() => {
         if (initialMessage) {
-            setShowSuggestions(false);
             const userMessage: Message = { role: 'user', text: initialMessage };
-            setMessages(prev => [...prev, userMessage]);
-            sendMessageToAi(initialMessage);
+            setMessages(prevMessages => {
+                const updatedMessages = [...prevMessages, userMessage];
+                sendMessageToAi(updatedMessages);
+                return updatedMessages;
+            });
             clearInitialMessage();
         }
-    }, [initialMessage]);
+    }, [initialMessage, clearInitialMessage, sendMessageToAi]);
 
     const sendSuggestedPrompt = async (prompt: string) => {
         if (isLoading) return;
-        setShowSuggestions(false);
-        const userMessage: Message = { role: 'user', text: prompt };
-        setMessages(prev => [...prev, userMessage]);
-        await sendMessageToAi(prompt);
+        const newUserMessage: Message = { role: 'user', text: prompt };
+        const updatedMessages = [...messages, newUserMessage];
+        setMessages(updatedMessages);
+        await sendMessageToAi(updatedMessages);
     };
 
     const handleEditablePrompt = (prompt: string) => {
@@ -375,10 +463,7 @@ Your Core Directives:
 
     const submitMessage = async () => {
         if (!inputValue.trim() || isLoading) return;
-        setShowSuggestions(false);
-
-        const userMessage: Message = { role: 'user', text: inputValue };
-        setMessages(prev => [...prev, userMessage]);
+        
         const messageToSend = inputValue;
         setInputValue('');
         
@@ -386,7 +471,10 @@ Your Core Directives:
             inputRef.current.style.height = 'auto';
         }
         
-        await sendMessageToAi(messageToSend);
+        const newUserMessage: Message = { role: 'user', text: messageToSend };
+        const updatedMessages = [...messages, newUserMessage];
+        setMessages(updatedMessages);
+        await sendMessageToAi(updatedMessages);
     };
     
     const handleSendMessage = (e: React.FormEvent) => {
@@ -549,9 +637,9 @@ Your Core Directives:
                 {/* Draggable Chat Window */}
                 <div 
                     ref={chatWindowRef}
-                    className={`bg-white dark:bg-[#1a1a1a] flex flex-col shadow-2xl h-full w-full
+                    className={`bg-white dark:bg-gray-900 flex flex-col shadow-2xl h-full w-full
                         border-0 rounded-none
-                        md:rounded-2xl md:border md:border-slate-200 dark:md:border-gray-800
+                        md:rounded-2xl md:border md:border-gray-200 dark:md:border-gray-800
                         ${isDragging ? 'transition-none' : ''}`
                     } 
                     style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
@@ -559,14 +647,14 @@ Your Core Directives:
                     aria-modal="true" 
                     aria-hidden={!isOpen}
                 >
-                    <header onMouseDown={handleMouseDown} className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-gray-700 flex-shrink-0 md:cursor-move">
-                        <h2 className="text-lg font-medium text-slate-900 dark:text-white">AI Assistant</h2>
+                    <header onMouseDown={handleMouseDown} className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0 md:cursor-move">
+                        <h2 className="text-lg font-medium text-gray-900 dark:text-white">AI Assistant</h2>
                         <div className="flex items-center gap-2">
-                            {messages.length > 1 && (
+                            {messages.length > 0 && (
                                 <div className="relative" ref={shareMenuRef}>
                                     <button 
                                         onClick={() => setIsShareMenuOpen(prev => !prev)} 
-                                        className="text-slate-500 dark:text-gray-400 hover:text-slate-800 dark:hover:text-white" 
+                                        className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white" 
                                         aria-label="Share or export chat"
                                         aria-haspopup="true"
                                         aria-expanded={isShareMenuOpen}
@@ -574,61 +662,53 @@ Your Core Directives:
                                         <ShareIcon />
                                     </button>
                                     {isShareMenuOpen && (
-                                        <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-[#2a2a2a] border border-slate-200 dark:border-gray-700 rounded-md shadow-lg z-10 py-1 animate-fade-in-scale">
-                                            <button onClick={handlePrint} className="block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">Print / Save as PDF</button>
-                                            <button onClick={handleCopyToClipboard} className="block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">Copy to Clipboard</button>
-                                            <button onClick={handleDownloadText} className="block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">Download as .txt File</button>
+                                        <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 py-1 animate-fade-in-scale">
+                                            <button onClick={handlePrint} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">Print / Save as PDF</button>
+                                            <button onClick={handleCopyToClipboard} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">Copy to Clipboard</button>
+                                            <button onClick={handleDownloadText} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">Download as .txt File</button>
                                         </div>
                                     )}
                                 </div>
                             )}
-                            <button onClick={() => setIsOpen(false)} className="text-slate-500 dark:text-gray-400 hover:text-slate-800 dark:hover:text-white" aria-label="Close chat">
+                            <button onClick={() => setIsOpen(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white" aria-label="Close chat">
                                 <XIcon />
                             </button>
                         </div>
                     </header>
 
-                    <div className="flex-grow p-4 overflow-y-auto space-y-4">
-                        {messages.map((msg, index) => (
-                            <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`rounded-2xl px-4 py-2 max-w-sm break-words ${msg.role === 'user' ? 'bg-sky-600 text-white' : 'bg-slate-200 text-slate-800 dark:bg-gray-700 dark:text-gray-200'}`}>
-                                    {msg.role === 'user' 
-                                        ? <p style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</p>
-                                        : <MarkdownRenderer content={msg.text} onViewCalculatorClick={onViewCalculatorClick} />
-                                    }
-                                </div>
-                            </div>
-                        ))}
-                        {isLoading && messages[messages.length - 1]?.text === '' && (
-                            <div className="flex justify-start">
-                                <div className="bg-slate-200 dark:bg-gray-700 text-gray-200 rounded-2xl px-4 py-2">
-                                    <div className="flex items-center space-x-1">
-                                        <span className="w-2 h-2 bg-slate-400 dark:bg-gray-400 rounded-full animate-pulse [animation-delay:-0.3s]"></span>
-                                        <span className="w-2 h-2 bg-slate-400 dark:bg-gray-400 rounded-full animate-pulse [animation-delay:-0.15s]"></span>
-                                        <span className="w-2 h-2 bg-slate-400 dark:bg-gray-400 rounded-full animate-pulse"></span>
+                    <div className="flex-grow p-4 overflow-y-auto">
+                        {messages.length === 0 && !isLoading ? (
+                            <WelcomeScreen onPromptClick={sendSuggestedPrompt} onEditablePrompt={handleEditablePrompt} />
+                        ) : (
+                            <div className="space-y-4">
+                                {messages.map((msg, index) => (
+                                    <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`rounded-2xl px-4 py-2 max-w-[80%] break-words ${msg.role === 'user' ? 'bg-sky-600 text-white' : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'}`}>
+                                             <MarkdownRenderer 
+                                                content={msg.text} 
+                                                onViewCalculatorClick={onViewCalculatorClick}
+                                                className={msg.role === 'model' && msg.text.includes('\n') ? 'space-y-4' : ''}
+                                            />
+                                        </div>
                                     </div>
-                                </div>
+                                ))}
+                                {isLoading && messages[messages.length - 1]?.text === '' && (
+                                    <div className="flex justify-start">
+                                        <div className="bg-gray-100 dark:bg-gray-800 text-gray-200 rounded-2xl px-4 py-2">
+                                            <div className="flex items-center space-x-1">
+                                                <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-pulse [animation-delay:-0.3s]"></span>
+                                                <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-pulse [animation-delay:-0.15s]"></span>
+                                                <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-pulse"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                <div ref={messagesEndRef} />
                             </div>
                         )}
-                        <div ref={messagesEndRef} />
                     </div>
                     
-                    {showSuggestions && !isLoading && messages.length <= 1 && (
-                        <div className="px-4 pb-2 flex-shrink-0 flex flex-wrap gap-2">
-                            {suggestedPrompts.map((prompt, index) => (
-                                <button
-                                    key={index}
-                                    onClick={() => prompt.editable ? handleEditablePrompt(prompt.text) : sendSuggestedPrompt(prompt.text)}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-slate-200 dark:bg-gray-700 text-slate-700 dark:text-gray-200 rounded-full hover:bg-slate-300 dark:hover:bg-gray-600 transition-colors text-left"
-                                >
-                                    {prompt.text}
-                                    {prompt.editable && <PencilIcon className="w-3 h-3 text-slate-500 dark:text-gray-400 shrink-0" />}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-
-                    <form onSubmit={handleSendMessage} className="p-4 border-t border-slate-200 dark:border-gray-700 flex items-center gap-2 flex-shrink-0">
+                    <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 dark:border-gray-800 flex items-center gap-2 flex-shrink-0">
                         <textarea
                             ref={inputRef}
                             rows={1}
@@ -636,12 +716,12 @@ Your Core Directives:
                             onChange={handleInputChange}
                             onKeyDown={handleKeyDown}
                             placeholder="Ask about my services..."
-                            className="flex-1 bg-slate-100 dark:bg-[#2a2a2a] border border-slate-300 dark:border-gray-600 rounded-lg py-2 px-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500 overflow-y-auto"
+                            className="flex-1 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg py-2 px-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500 overflow-y-auto"
                             style={{ maxHeight: '120px', resize: 'none' }}
                             disabled={isLoading}
                             aria-label="Chat input"
                         />
-                        <button type="submit" className="bg-sky-500 text-white rounded-lg p-2 hover:bg-sky-600 disabled:bg-slate-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed self-end" disabled={isLoading || !inputValue.trim()} aria-label="Send message">
+                        <button type="submit" className="bg-sky-500 text-white rounded-lg p-2 hover:bg-sky-600 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed self-end" disabled={isLoading || !inputValue.trim()} aria-label="Send message">
                             <SendIcon />
                         </button>
                     </form>
@@ -651,7 +731,7 @@ Your Core Directives:
             {!isOpen && (
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="fixed bottom-6 right-6 z-40 bg-sky-500 text-white rounded-full p-4 shadow-lg hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-[#131314] focus:ring-sky-500 transition-transform transform hover:scale-110"
+                    className="fixed bottom-6 right-6 z-40 bg-sky-500 text-white rounded-full p-4 shadow-lg hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-50 dark:focus:ring-offset-gray-950 focus:ring-sky-500 transition-transform transform hover:scale-110"
                     aria-label="Open chat"
                 >
                     <ChatIcon />

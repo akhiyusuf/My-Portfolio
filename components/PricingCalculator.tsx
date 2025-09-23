@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { CalculatorIcon, ResetIcon, ChevronDownIcon, MagicWandIcon } from './Icons';
 import { Selections, initialSelections, calculateTotalCost, PRICING } from './pricing';
@@ -14,33 +12,51 @@ interface OptionRowProps {
 }
 const OptionRow: React.FC<OptionRowProps> = ({ name, price, children, fullWidth = false }) => (
     <div className={`py-3 ${fullWidth ? 'col-span-2' : ''}`}>
-        <div className="flex justify-between items-center mb-2">
-            <span className="font-medium text-slate-700 dark:text-gray-300">{name}</span>
-            <span className="text-sky-500 dark:text-sky-400 font-mono text-sm">{price}</span>
+        <div className="flex flex-wrap justify-between items-baseline gap-x-2 mb-2">
+            <span className="font-medium text-gray-700 dark:text-gray-300">{name}</span>
+            <span className="text-sky-500 dark:text-sky-400 font-mono text-sm flex-shrink-0">{price}</span>
         </div>
         {children}
     </div>
 );
 
 
-interface SliderInputProps {
+interface CounterInputProps {
     value: number;
     onChange: (value: number) => void;
+    min?: number;
     max?: number;
 }
-const SliderInput: React.FC<SliderInputProps> = ({ value, onChange, max = 20 }) => (
-    <div className="flex items-center gap-4">
-        <input
-            type="range"
-            min="0"
-            max={max}
-            value={value}
-            onChange={(e) => onChange(parseInt(e.target.value))}
-            className="w-full h-2 bg-slate-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-sky-500"
-        />
-        <span className="bg-slate-100 dark:bg-[#2a2a2a] text-slate-800 dark:text-white text-sm font-semibold w-12 text-center py-1 rounded-md">{value}</span>
-    </div>
-);
+const CounterInput: React.FC<CounterInputProps> = ({ value, onChange, min = 0, max = 20 }) => {
+    const handleDecrement = () => onChange(Math.max(min, value - 1));
+    const handleIncrement = () => onChange(Math.min(max, value + 1));
+
+    return (
+        <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+                <button
+                    type="button"
+                    onClick={handleDecrement}
+                    disabled={value <= min}
+                    className="w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Decrement"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8z"/></svg>
+                </button>
+                <button
+                    type="button"
+                    onClick={handleIncrement}
+                    disabled={value >= max}
+                    className="w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Increment"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
+                </button>
+            </div>
+            <span className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white text-sm font-semibold w-16 text-center py-1.5 rounded-md tabular-nums">{value}</span>
+        </div>
+    );
+};
 
 interface ToggleSwitchProps {
     checked: boolean;
@@ -49,7 +65,7 @@ interface ToggleSwitchProps {
 const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ checked, onChange }) => (
     <label className="relative inline-flex items-center cursor-pointer">
         <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="sr-only peer" />
-        <div className="w-11 h-6 bg-slate-300 dark:bg-gray-700 rounded-full peer peer-focus:ring-2 peer-focus:ring-sky-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
+        <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-focus:ring-2 peer-focus:ring-sky-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
     </label>
 );
 
@@ -79,7 +95,7 @@ const FeatureControls: React.FC<FeatureControlsProps> = ({ selections, updateSel
         {/* Row 1: Design Tier (Full Width) */}
         <div className="pt-2">
             <OptionRow name="Design Tier" price={`×${selections.designTier} of base`}>
-                <select value={selections.designTier} onChange={e => updateSelection('designTier', parseInt(e.target.value))} className="w-full bg-slate-100 dark:bg-[#2a2a2a] border border-slate-300 dark:border-gray-700 rounded-md py-2 px-3 text-slate-800 dark:text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
+                <select value={selections.designTier} onChange={e => updateSelection('designTier', parseInt(e.target.value))} className="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md py-2 px-3 text-gray-800 dark:text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
                     <option value={1}>Tier 1: Template Customization</option>
                     <option value={2}>Tier 2: Custom Design</option>
                     <option value={3}>Tier 3: Premium Custom</option>
@@ -92,13 +108,13 @@ const FeatureControls: React.FC<FeatureControlsProps> = ({ selections, updateSel
         <div className="grid grid-cols-2 items-start relative">
              <div className="pr-4">
                 <OptionRow name="Standard Pages" price={formatCurrencyStatic(PRICING.standardPage, 'ngn') + '/p'}>
-                    <SliderInput value={selections.standardPages} onChange={v => updateSelection('standardPages', v)} />
+                    <CounterInput value={selections.standardPages} onChange={v => updateSelection('standardPages', v)} />
                 </OptionRow>
             </div>
-             <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-200/50 dark:bg-gray-700/50"></div>
+             <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-800"></div>
             <div className="pl-4">
                 <OptionRow name="Complex Pages" price={formatCurrencyStatic(PRICING.complexPage, 'ngn') + '/p'}>
-                    <SliderInput value={selections.complexPages} onChange={v => updateSelection('complexPages', v)} />
+                    <CounterInput value={selections.complexPages} onChange={v => updateSelection('complexPages', v)} />
                 </OptionRow>
             </div>
         </div>
@@ -107,13 +123,13 @@ const FeatureControls: React.FC<FeatureControlsProps> = ({ selections, updateSel
         <div className="grid grid-cols-2 items-start relative">
              <div className="pr-4">
                 <OptionRow name="System Pages" price={formatCurrencyStatic(PRICING.systemPage, 'ngn') + '/p'}>
-                    <SliderInput value={selections.systemPages} onChange={v => updateSelection('systemPages', v)} max={5} />
+                    <CounterInput value={selections.systemPages} onChange={v => updateSelection('systemPages', v)} max={5} />
                 </OptionRow>
             </div>
-            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-200/50 dark:bg-gray-700/50"></div>
+            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-800"></div>
             <div className="pl-4">
                  <OptionRow name="API Integrations" price={formatCurrencyStatic(PRICING.apiIntegration, 'ngn') + '/API'}>
-                    <SliderInput value={selections.apis} onChange={v => updateSelection('apis', v)} max={10} />
+                    <CounterInput value={selections.apis} onChange={v => updateSelection('apis', v)} max={10} />
                 </OptionRow>
             </div>
         </div>
@@ -121,7 +137,7 @@ const FeatureControls: React.FC<FeatureControlsProps> = ({ selections, updateSel
         {/* Row 4: CMS (Full Width) */}
          <div>
             <OptionRow name="Content Management (CMS)" price={selections.cmsType !== "0" ? "One-time" : "None"}>
-                <select value={selections.cmsType} onChange={e => updateSelection('cmsType', e.target.value)} className="w-full bg-slate-100 dark:bg-[#2a2a2a] border border-slate-300 dark:border-gray-700 rounded-md py-2 px-3 text-slate-800 dark:text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
+                <select value={selections.cmsType} onChange={e => updateSelection('cmsType', e.target.value)} className="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md py-2 px-3 text-gray-800 dark:text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
                     <option value="0">None</option>
                     <option value="100000">Headless CMS (e.g., Sanity)</option>
                     <option value="250000">Traditional CMS (e.g., WordPress)</option>
@@ -132,7 +148,7 @@ const FeatureControls: React.FC<FeatureControlsProps> = ({ selections, updateSel
         {/* Row 5: E-commerce (Full Width) */}
         <div>
             <OptionRow name="Number of Products (for E-commerce)" price={formatCurrencyStatic(PRICING.product, 'ngn') + '/prod'}>
-                <SliderInput value={selections.products} onChange={v => updateSelection('products', v)} max={200} />
+                <CounterInput value={selections.products} onChange={v => updateSelection('products', v)} max={200} />
             </OptionRow>
         </div>
 
@@ -143,7 +159,7 @@ const FeatureControls: React.FC<FeatureControlsProps> = ({ selections, updateSel
                     <ToggleSwitch checked={selections.userAuth} onChange={v => updateSelection('userAuth', v)} />
                 </OptionRow>
             </div>
-             <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-200/50 dark:bg-gray-700/50"></div>
+             <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-800"></div>
             <div className="pl-4">
                 <OptionRow name="Payment Gateway" price={formatCurrencyStatic(PRICING.paymentGateway, 'ngn')}>
                     <ToggleSwitch checked={selections.paymentGateway} onChange={v => updateSelection('paymentGateway', v)} />
@@ -157,7 +173,7 @@ const FeatureControls: React.FC<FeatureControlsProps> = ({ selections, updateSel
 const CoreFeaturesControls: React.FC<FeatureControlsProps> = ({ selections, updateSelection }) => (
     <>
         <OptionRow name="Design Tier" price={`×${selections.designTier} of base`} fullWidth>
-            <select value={selections.designTier} onChange={e => updateSelection('designTier', parseInt(e.target.value))} className="w-full bg-slate-100 dark:bg-[#2a2a2a] border border-slate-300 dark:border-gray-700 rounded-md py-2 px-3 text-slate-800 dark:text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
+            <select value={selections.designTier} onChange={e => updateSelection('designTier', parseInt(e.target.value))} className="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md py-2 px-3 text-gray-800 dark:text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
                 <option value={1}>Tier 1: Template Customization</option>
                 <option value={2}>Tier 2: Custom Design</option>
                 <option value={3}>Tier 3: Premium Custom</option>
@@ -165,13 +181,13 @@ const CoreFeaturesControls: React.FC<FeatureControlsProps> = ({ selections, upda
             </select>
         </OptionRow>
         <OptionRow name="Standard Pages" price={formatCurrencyStatic(PRICING.standardPage, 'ngn') + '/p'}>
-            <SliderInput value={selections.standardPages} onChange={v => updateSelection('standardPages', v)} />
+            <CounterInput value={selections.standardPages} onChange={v => updateSelection('standardPages', v)} />
         </OptionRow>
         <OptionRow name="Complex Pages" price={formatCurrencyStatic(PRICING.complexPage, 'ngn') + '/p'}>
-            <SliderInput value={selections.complexPages} onChange={v => updateSelection('complexPages', v)} />
+            <CounterInput value={selections.complexPages} onChange={v => updateSelection('complexPages', v)} />
         </OptionRow>
         <OptionRow name="System Pages" price={formatCurrencyStatic(PRICING.systemPage, 'ngn') + '/p'}>
-            <SliderInput value={selections.systemPages} onChange={v => updateSelection('systemPages', v)} max={5} />
+            <CounterInput value={selections.systemPages} onChange={v => updateSelection('systemPages', v)} max={5} />
         </OptionRow>
     </>
 );
@@ -179,17 +195,17 @@ const CoreFeaturesControls: React.FC<FeatureControlsProps> = ({ selections, upda
 const AdvancedFeaturesControls: React.FC<FeatureControlsProps> = ({ selections, updateSelection }) => (
     <>
         <OptionRow name="API Integrations" price={formatCurrencyStatic(PRICING.apiIntegration, 'ngn') + '/API'}>
-            <SliderInput value={selections.apis} onChange={v => updateSelection('apis', v)} max={10} />
+            <CounterInput value={selections.apis} onChange={v => updateSelection('apis', v)} max={10} />
         </OptionRow>
         <OptionRow name="Content Management (CMS)" price={selections.cmsType !== "0" ? "One-time" : "None"} fullWidth>
-            <select value={selections.cmsType} onChange={e => updateSelection('cmsType', e.target.value)} className="w-full bg-slate-100 dark:bg-[#2a2a2a] border border-slate-300 dark:border-gray-700 rounded-md py-2 px-3 text-slate-800 dark:text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
+            <select value={selections.cmsType} onChange={e => updateSelection('cmsType', e.target.value)} className="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md py-2 px-3 text-gray-800 dark:text-white focus:outline-none focus:ring-sky-500 focus:border-sky-500">
                 <option value="0">None</option>
                 <option value="100000">Headless CMS (e.g., Sanity)</option>
                 <option value="250000">Traditional CMS (e.g., WordPress)</option>
             </select>
         </OptionRow>
         <OptionRow name="Number of Products (for E-commerce)" price={formatCurrencyStatic(PRICING.product, 'ngn') + '/prod'} fullWidth>
-            <SliderInput value={selections.products} onChange={v => updateSelection('products', v)} max={200} />
+            <CounterInput value={selections.products} onChange={v => updateSelection('products', v)} max={200} />
         </OptionRow>
         <OptionRow name="User Authentication" price={formatCurrencyStatic(PRICING.userAuth, 'ngn')}>
             <ToggleSwitch checked={selections.userAuth} onChange={v => updateSelection('userAuth', v)} />
@@ -277,24 +293,24 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
     return (
         <section className="py-24">
             <div className="text-center mb-12">
-                <h2 className="text-4xl font-medium text-slate-900 dark:text-white tracking-tight flex items-center justify-center gap-3">
+                <h2 className="text-4xl font-medium text-gray-900 dark:text-white tracking-tight flex items-center justify-center gap-3">
                     <CalculatorIcon /> Instant Project Estimate
                 </h2>
-                <p className="text-slate-600 dark:text-gray-400 mt-2 max-w-2xl mx-auto">Use this calculator to get a ballpark figure for your project. Prices are estimates and may vary.</p>
+                <p className="text-gray-600 dark:text-gray-400 mt-2 max-w-2xl mx-auto">Use this calculator to get a ballpark figure for your project. Prices are estimates and may vary.</p>
             </div>
 
              {/* MOBILE-ONLY STICKY HEADER */}
-            <div className="lg:hidden sticky top-16 bg-slate-50 dark:bg-[#131314] z-20 py-4 border-b border-slate-200 dark:border-gray-800 -mx-4 px-4 sm:-mx-6 sm:px-6">
+            <div className="lg:hidden sticky top-16 bg-gray-50/90 dark:bg-gray-950/90 backdrop-blur-sm z-20 py-4 border-b border-gray-200 dark:border-gray-800 -mx-4 px-4 sm:-mx-6 sm:px-6">
                 <div className="max-w-lg mx-auto">
                     <div className="flex justify-between items-center mb-3">
-                        <span className="text-slate-600 dark:text-gray-400">Estimated Total:</span>
-                        <span className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{formatCurrency(totalCost, currency)}</span>
+                        <span className="text-gray-600 dark:text-gray-400">Estimated Total:</span>
+                        <span className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{formatCurrency(totalCost, currency)}</span>
                     </div>
-                    <div className="flex bg-slate-100 dark:bg-[#2a2a2a] p-1 rounded-md text-sm">
-                        <button onClick={() => setMobileView('options')} className={`w-1/2 py-2 rounded transition-colors ${mobileView === 'options' ? 'bg-white dark:bg-[#3a3a3a] text-slate-900 dark:text-white' : 'text-slate-600 dark:text-gray-400'}`}>
+                    <div className="flex bg-gray-200 dark:bg-gray-800 p-1 rounded-md text-sm">
+                        <button onClick={() => setMobileView('options')} className={`w-1/2 py-2 rounded transition-colors ${mobileView === 'options' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
                             Project Features
                         </button>
-                        <button onClick={() => setMobileView('summary')} className={`w-1/2 py-2 rounded transition-colors ${mobileView === 'summary' ? 'bg-white dark:bg-[#3a3a3a] text-slate-900 dark:text-white' : 'text-slate-600 dark:text-gray-400'}`}>
+                        <button onClick={() => setMobileView('summary')} className={`w-1/2 py-2 rounded transition-colors ${mobileView === 'summary' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
                             Cost Summary
                         </button>
                     </div>
@@ -305,22 +321,22 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
                 {/* Options Panel */}
                 <div className={`
                     ${mobileView === 'options' ? 'block' : 'hidden'} lg:block
-                    w-full lg:w-1/2 order-2 lg:order-1 bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-gray-800 rounded-xl p-6 relative mt-6 lg:mt-0
+                    w-full lg:w-1/2 order-2 lg:order-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 relative mt-6 lg:mt-0
                 `}>
-                    <h3 className="text-2xl font-medium text-slate-900 dark:text-white pb-4 border-b border-slate-200 dark:border-gray-800">Project Features</h3>
+                    <h3 className="text-2xl font-medium text-gray-900 dark:text-white pb-4 border-b border-gray-200 dark:border-gray-800">Project Features</h3>
                     
                     {/* DESKTOP: Single 2-column grid */}
-                    <div className="hidden lg:block divide-y divide-slate-200/50 dark:divide-gray-700/50">
+                    <div className="hidden lg:block divide-y divide-gray-200 dark:divide-gray-800">
                         <FeatureControls {...featureControlsProps} />
                     </div>
 
                     {/* MOBILE: Tabbed, grouped (accordion) layout */}
                     <div className="lg:hidden">
-                        <div className="flex border-b border-slate-200 dark:border-gray-800 text-center">
-                            <button onClick={() => setMobileFeatureSection('core')} className={`w-1/2 p-3 text-sm font-medium transition-colors ${mobileFeatureSection === 'core' ? 'text-slate-900 dark:text-white border-b-2 border-sky-500' : 'text-slate-600 dark:text-gray-400'}`}>
+                        <div className="flex border-b border-gray-200 dark:border-gray-800 text-center">
+                            <button onClick={() => setMobileFeatureSection('core')} className={`w-1/2 p-3 text-sm font-medium transition-colors ${mobileFeatureSection === 'core' ? 'text-gray-900 dark:text-white border-b-2 border-sky-500' : 'text-gray-500 dark:text-gray-400'}`}>
                                 1. Core Setup
                             </button>
-                            <button onClick={() => setMobileFeatureSection('advanced')} className={`w-1/2 p-3 text-sm font-medium transition-colors ${mobileFeatureSection === 'advanced' ? 'text-slate-900 dark:text-white border-b-2 border-sky-500' : 'text-slate-600 dark:text-gray-400'}`}>
+                            <button onClick={() => setMobileFeatureSection('advanced')} className={`w-1/2 p-3 text-sm font-medium transition-colors ${mobileFeatureSection === 'advanced' ? 'text-gray-900 dark:text-white border-b-2 border-sky-500' : 'text-gray-500 dark:text-gray-400'}`}>
                                 2. Advanced Features
                             </button>
                         </div>
@@ -328,25 +344,25 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
                         <div className="pt-2">
                              {mobileFeatureSection === 'core' && (
                                 <div>
-                                    <button onClick={() => toggleSection('core')} className="w-full flex justify-between items-center py-3 text-lg font-medium text-slate-900 dark:text-white">
+                                    <button onClick={() => toggleSection('core')} className="w-full flex justify-between items-center py-3 text-lg font-medium text-gray-900 dark:text-white">
                                         <span>Core Setup & Pages</span>
                                         <ChevronDownIcon className={`w-5 h-5 transition-transform duration-200 ${openSections.includes('core') ? 'rotate-180' : ''}`} />
                                     </button>
                                     {openSections.includes('core') && (
-                                        <div className="pl-4 pr-2 pb-2 border-l-2 border-slate-200/50 dark:border-gray-700/50 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
+                                        <div className="pl-4 pr-2 pb-2 border-l-2 border-gray-200 dark:border-gray-800 divide-y divide-gray-200 dark:divide-gray-800">
                                             <CoreFeaturesControls {...featureControlsProps} />
                                         </div>
                                     )}
                                 </div>
                             )}
                             {mobileFeatureSection === 'advanced' && (
-                                 <div className="border-t border-slate-200 dark:border-gray-800">
-                                     <button onClick={() => toggleSection('advanced')} className="w-full flex justify-between items-center py-3 text-lg font-medium text-slate-900 dark:text-white">
+                                 <div className="border-t border-gray-200 dark:border-gray-800">
+                                     <button onClick={() => toggleSection('advanced')} className="w-full flex justify-between items-center py-3 text-lg font-medium text-gray-900 dark:text-white">
                                         <span>Advanced Features & Integrations</span>
                                         <ChevronDownIcon className={`w-5 h-5 transition-transform duration-200 ${openSections.includes('advanced') ? 'rotate-180' : ''}`} />
                                     </button>
                                      {openSections.includes('advanced') && (
-                                        <div className="pl-4 pr-2 pb-2 border-l-2 border-slate-200/50 dark:border-gray-700/50 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
+                                        <div className="pl-4 pr-2 pb-2 border-l-2 border-gray-200 dark:border-gray-800 divide-y divide-gray-200 dark:divide-gray-800">
                                             <AdvancedFeaturesControls {...featureControlsProps} />
                                         </div>
                                     )}
@@ -359,53 +375,53 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
                 {/* Summary Panel */}
                 <div className={`
                     ${mobileView === 'summary' ? 'block' : 'hidden'} lg:block
-                    w-full lg:w-1/2 order-1 lg:order-2 bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-gray-800 rounded-xl p-6 lg:sticky lg:top-24 mt-6 lg:mt-0 lg:flex lg:flex-col
+                    w-full lg:w-1/2 order-1 lg:order-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 lg:sticky lg:top-24 mt-6 lg:mt-0 lg:flex lg:flex-col
                 `}>
-                    <h3 className="text-2xl font-medium text-slate-900 dark:text-white pb-4 border-b border-slate-200 dark:border-gray-800">Estimate Summary</h3>
+                    <h3 className="text-2xl font-medium text-gray-900 dark:text-white pb-4 border-b border-gray-200 dark:border-gray-800">Estimate Summary</h3>
                     
                     {/* Desktop-only total and currency switch */}
                     <div className="hidden lg:block">
                         <div className="my-4">
-                            <div className="flex bg-slate-100 dark:bg-[#2a2a2a] p-1 rounded-md text-sm">
-                                <button onClick={() => setCurrency('ngn')} className={`w-1/2 py-2 rounded ${currency === 'ngn' ? 'bg-white dark:bg-[#3a3a3a] text-slate-900 dark:text-white' : 'text-slate-600 dark:text-gray-400'}`}>NGN</button>
-                                <button onClick={() => setCurrency('usd')} className={`w-1/2 py-2 rounded ${currency === 'usd' ? 'bg-white dark:bg-[#3a3a3a] text-slate-900 dark:text-white' : 'text-slate-600 dark:text-gray-400'}`}>USD</button>
+                            <div className="flex bg-gray-200 dark:bg-gray-800 p-1 rounded-md text-sm">
+                                <button onClick={() => setCurrency('ngn')} className={`w-1/2 py-2 rounded ${currency === 'ngn' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>NGN</button>
+                                <button onClick={() => setCurrency('usd')} className={`w-1/2 py-2 rounded ${currency === 'usd' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>USD</button>
                             </div>
                         </div>
                         <div className="text-center my-6">
-                            <p className="text-slate-600 dark:text-gray-400 text-sm">Total Estimated Cost</p>
-                            <p className="text-5xl font-bold text-slate-900 dark:text-white tracking-tight">{formatCurrency(totalCost, currency)}</p>
+                            <p className="text-gray-600 dark:text-gray-400 text-sm">Total Estimated Cost</p>
+                            <p className="text-5xl font-bold text-gray-900 dark:text-white tracking-tight">{formatCurrency(totalCost, currency)}</p>
                         </div>
                     </div>
 
                      {/* Mobile-only currency switch */}
                     <div className="block lg:hidden my-4">
-                        <p className="text-slate-600 dark:text-gray-400 text-sm mb-2">Display Currency</p>
-                        <div className="flex bg-slate-100 dark:bg-[#2a2a2a] p-1 rounded-md text-sm">
-                           <button onClick={() => setCurrency('ngn')} className={`w-1/2 py-2 rounded ${currency === 'ngn' ? 'bg-white dark:bg-[#3a3a3a] text-slate-900 dark:text-white' : 'text-slate-600 dark:text-gray-400'}`}>NGN (₦)</button>
-                           <button onClick={() => setCurrency('usd')} className={`w-1/2 py-2 rounded ${currency === 'usd' ? 'bg-white dark:bg-[#3a3a3a] text-slate-900 dark:text-white' : 'text-slate-600 dark:text-gray-400'}`}>USD ($)</button>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">Display Currency</p>
+                        <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-md text-sm">
+                           <button onClick={() => setCurrency('ngn')} className={`w-1/2 py-2 rounded ${currency === 'ngn' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>NGN (₦)</button>
+                           <button onClick={() => setCurrency('usd')} className={`w-1/2 py-2 rounded ${currency === 'usd' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>USD ($)</button>
                         </div>
                     </div>
                     
                     <div className="space-y-4">
-                        <h4 className="text-lg font-medium text-slate-900 dark:text-white">Payment Milestones</h4>
-                        <div className="text-sm text-slate-600 dark:text-gray-400">
+                        <h4 className="text-lg font-medium text-gray-900 dark:text-white">Payment Milestones</h4>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
                             {milestones.map(m => (
-                                <div key={m.phase} className="flex justify-between items-center py-2 border-b border-slate-200/50 dark:border-gray-800/50">
+                                <div key={m.phase} className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-800">
                                     <span>{m.phase}</span>
-                                    <span className="font-mono text-slate-700 dark:text-gray-300">{formatCurrency(m.amount, currency)}</span>
+                                    <span className="font-mono text-gray-700 dark:text-gray-300">{formatCurrency(m.amount, currency)}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
 
-                    <div className="mt-6 lg:mt-auto pt-4 border-t border-slate-200 dark:border-gray-800 space-y-2">
+                    <div className="mt-6 lg:mt-auto pt-4 border-t border-gray-200 dark:border-gray-800 space-y-2">
                         <button 
                             onClick={handleDiscussClick}
                             className="w-full flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200">
                             <MagicWandIcon className="w-4 h-4" />
                             <span>Discuss with AI</span>
                         </button>
-                        <button onClick={handleReset} className="w-full flex items-center justify-center space-x-2 bg-slate-200 hover:bg-slate-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-slate-800 dark:text-white font-medium py-2 px-4 rounded-md transition-colors duration-200">
+                        <button onClick={handleReset} className="w-full flex items-center justify-center space-x-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-md transition-colors duration-200">
                             <ResetIcon />
                             <span>Reset Selections</span>
                         </button>

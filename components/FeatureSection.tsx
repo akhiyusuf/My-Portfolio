@@ -1,5 +1,3 @@
-
-
 import React from 'react';
 
 interface FeatureSectionProps {
@@ -16,12 +14,12 @@ const FeatureSection: React.FC<FeatureSectionProps> = ({ label, title, descripti
   return (
     <section className={`flex flex-col ${direction} items-center gap-12 md:gap-24`}>
       <div className="md:w-1/2">
-        <p className="text-slate-500 dark:text-gray-400 mb-2">{label}</p>
-        <h2 className="text-4xl font-medium text-slate-900 dark:text-white tracking-tight mb-4">{title}</h2>
-        <p className="text-slate-600 dark:text-gray-400 leading-relaxed">{description}</p>
+        <p className="text-gray-500 dark:text-gray-400 mb-2">{label}</p>
+        <h2 className="text-4xl font-medium text-gray-900 dark:text-white tracking-tight mb-4">{title}</h2>
+        <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{description}</p>
       </div>
       <div className="md:w-1/2 w-full">
-        <div className="aspect-[4/3] bg-slate-200 dark:bg-zinc-800 rounded-2xl overflow-hidden">
+        <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-900 rounded-2xl overflow-hidden">
           <img src={imageUrl} alt={title} className="w-full h-full object-cover" />
         </div>
       </div>
